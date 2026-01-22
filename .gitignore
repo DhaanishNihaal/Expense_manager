@@ -1,0 +1,37 @@
+# Root level .gitignore for Expense Manager Project
+
+### Setup/Documentation Files (Local Only) ###
+# These were created during local setup and contain specific instructions
+BACKEND_SETUP_GUIDE.md
+FIX_MYSQL_PATH.md
+NEXT_STEPS.md
+QUICK_START.md
+setup_database.sql
+insert_roles.sql
+mysql.bat
+
+### OS Files ###
+.DS_Store
+Thumbs.db
+desktop.ini
+
+### IDE ###
+.vscode/
+.idea/
+*.iml
+
+### Environment Files ###
+.env
+.env.local
+
+### Logs ###
+*.log
+
+### Database Files ###
+*.db
+*.sqlite
+*.sqlite3
+
+### Backup Files ###
+*.bak
+*.tmp

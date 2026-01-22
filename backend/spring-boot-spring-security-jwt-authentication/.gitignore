@@ -1,0 +1,63 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**
+!**/src/test/**
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+### VS Code ###
+.vscode/
+
+### CRITICAL: Sensitive Configuration Files ###
+# Contains MySQL password and JWT secret - DO NOT COMMIT!
+**/application.properties
+**/application-*.properties
+
+# If you want to share configs, create application.properties.example instead
+# with placeholder values like: spring.datasource.password=YOUR_PASSWORD_HERE
+
+### Logs ###
+*.log
+logs/
+spring.log
+
+### OS Files ###
+.DS_Store
+Thumbs.db
+desktop.ini
+
+### Environment Variables ###
+.env
+.env.local
+.env.*.local
+
+### MySQL Helper Files (contains password in commands) ###
+mysql.bat
+
+### Backup Files ###
+*.bak
+*.tmp
+*.swp
+*~
