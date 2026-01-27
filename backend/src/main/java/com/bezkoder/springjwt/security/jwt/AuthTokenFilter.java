@@ -20,6 +20,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import com.bezkoder.springjwt.security.services.UserDetailsServiceImpl;
 
 public class AuthTokenFilter extends OncePerRequestFilter {
+  @Override
+protected boolean shouldNotFilter(HttpServletRequest request) {
+    String path = request.getServletPath();
+
+    return path.startsWith("/api/auth/")
+        || path.equals("/error");
+}
+
+
   @Autowired
   private JwtUtils jwtUtils;
 
