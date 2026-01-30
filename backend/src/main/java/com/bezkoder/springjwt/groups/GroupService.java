@@ -5,6 +5,8 @@ import com.bezkoder.springjwt.models.User;
 import com.bezkoder.springjwt.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+
 
 @Service
 public class GroupService {
@@ -73,6 +75,13 @@ public class GroupService {
         member.setRole("MEMBER");
 
         groupMemberRepository.save(member);
+    }
+    @Transactional(readOnly = true)
+    public List<Group> getUserGroups(String username) {
+
+    User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+    return groupRepository.findGroupsByUserId(user.getId());
     }
 
     

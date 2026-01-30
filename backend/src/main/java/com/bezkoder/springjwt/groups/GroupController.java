@@ -4,6 +4,9 @@ import com.bezkoder.springjwt.groups.dto.AddGroupMemberRequest;
 import com.bezkoder.springjwt.groups.dto.CreateGroupRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/groups")
@@ -31,5 +34,11 @@ public class GroupController {
         groupService.addMember(groupId, adminUsername, request.getUsername());
 
         return "Member added successfully";
+    }
+    @GetMapping
+    public List<Group> getMyGroups(Authentication authentication) {
+
+        String username = authentication.getName();
+        return groupService.getUserGroups(username);
     }
 }
