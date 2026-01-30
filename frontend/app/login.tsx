@@ -58,6 +58,12 @@ export default function LoginScreen() {
           {loading ? "Logging in..." : "Login"}
         </Text>
       </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push("/signup")}>
+        <Text style={{ marginTop: 16, textAlign: "center", color: "#2563eb" }}>
+          Don’t have an account? Sign up
+        </Text>
+      </TouchableOpacity>
+
     </View>
   );
 }
