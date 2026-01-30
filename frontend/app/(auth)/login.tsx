@@ -1,6 +1,6 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { useState } from "react";
-import { login } from "../src/auth/authService";
+import { login } from "../../src/auth/authService";
 import { useRouter } from "expo-router";
 
 export default function LoginScreen() {

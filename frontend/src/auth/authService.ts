@@ -1,5 +1,7 @@
 import api from "../api/api";
+
 import { saveToken, removeToken } from "../utils/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface LoginResponse {
   accessToken: string;
@@ -24,5 +26,5 @@ export const login = async (username: string, password: string) => {
 };
 
 export const logout = async () => {
-  await removeToken();
+  await AsyncStorage.removeItem("token");
 };

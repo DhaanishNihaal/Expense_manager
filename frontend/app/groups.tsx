@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { logout } from "../src/auth/authService";
 import AuthGuard from "../src/auth/authGuard";
@@ -14,11 +14,8 @@ export default function GroupsScreen() {
   return (
     <AuthGuard>
       <View style={{ flex: 1, padding: 24 }}>
-        <TouchableOpacity
-          onPress={handleLogout}
-          style={{ alignSelf: "flex-end", marginBottom: 20 }}
-        >
-          <Text style={{ color: "red" }}>Logout</Text>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
         <Text>Groups Screen</Text>
@@ -26,3 +23,20 @@ export default function GroupsScreen() {
     </AuthGuard>
   );
 }
+
+const styles = StyleSheet.create({
+  logoutBtn: {
+  marginTop: 20,
+  padding: 10,
+  backgroundColor: "#dc3545",
+  borderRadius: 5,
+  alignSelf: "flex-end",
+},
+
+logoutText: {
+  color: "white",
+  fontWeight: "bold",
+},
+
+});
+

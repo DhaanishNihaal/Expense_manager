@@ -1,7 +1,7 @@
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { useState } from "react";
 import { useEffect } from "react";
-import api from "../src/api/api";
+import api from "../../src/api/api";
 import { useRouter } from "expo-router";
 import { AxiosError } from "axios";
 
@@ -97,10 +97,16 @@ export default function SignupScreen() {
         disabled={loading}
       >
 
+
         <Text style={styles.buttonText}>
           {loading ? "Creating..." : "Sign Up"}
         </Text>
       </TouchableOpacity>
+    <TouchableOpacity onPress={() => router.replace("/login")}>
+        <Text style={styles.linkText}>
+            Already have an account? Login
+        </Text>
+    </TouchableOpacity>
     </View>
   );
 }
@@ -127,8 +133,8 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#007bff",
-    padding: 12,
-    borderRadius: 5,
+    padding: 14,
+    borderRadius: 8,
     width: "100%",
     alignItems: "center",
   },
@@ -145,6 +151,11 @@ const styles = StyleSheet.create({
   color: "green",
   marginBottom: 10,
   fontWeight: "600",
+  },
+  linkText: {
+  color: "#2563eb",
+  marginTop: 16,
+  textAlign: "center",
   },
 
 });
