@@ -1,6 +1,7 @@
 package com.bezkoder.springjwt.groups;
 
 import com.bezkoder.springjwt.groups.dto.CreateGroupRequest;
+import com.bezkoder.springjwt.groups.dto.GroupResponse;
 import com.bezkoder.springjwt.models.User;
 import com.bezkoder.springjwt.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -82,6 +83,27 @@ public class GroupService {
     User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new RuntimeException("User not found"));
     return groupRepository.findGroupsByUserId(user.getId());
+    }
+
+    @Transactional(readOnly = true)
+    public List<GroupResponse> getUserGroupsWithMemberCount(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        List<Group> groups = groupRepository.findGroupsByUserId(user.getId());
+        
+        return groups.stream()
+                .map(group -> {
+                    int memberCount = groupMemberRepository.findByGroupId(group.getId()).size();
+                    return new GroupResponse(
+                        group.getId(),
+                        group.getName(),
+                        group.getDescription(),
+                        group.getCreatedAt(),
+                        memberCount
+                    );
+                })
+                .toList();
     }
 
     

@@ -2,10 +2,9 @@ package com.bezkoder.springjwt.groups;
 
 import com.bezkoder.springjwt.groups.dto.AddGroupMemberRequest;
 import com.bezkoder.springjwt.groups.dto.CreateGroupRequest;
+import com.bezkoder.springjwt.groups.dto.GroupResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
 import java.util.List;
 
 @RestController
@@ -36,9 +35,9 @@ public class GroupController {
         return "Member added successfully";
     }
     @GetMapping
-    public List<Group> getMyGroups(Authentication authentication) {
+    public List<GroupResponse> getMyGroups(Authentication authentication) {
 
         String username = authentication.getName();
-        return groupService.getUserGroups(username);
+        return groupService.getUserGroupsWithMemberCount(username);
     }
 }
