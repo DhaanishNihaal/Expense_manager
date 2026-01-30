@@ -8,10 +8,13 @@ import {
   RefreshControl
 } from "react-native";
 import { useRouter } from "expo-router";
-import { logout } from "../src/auth/authService";
-import AuthGuard from "../src/auth/authGuard";
-import { fetchGroups } from "../src/api/groupsApi";
+import { logout } from "../../src/auth/authService";
+import AuthGuard from "../../src/auth/authGuard";
+import { fetchGroups } from "../../src/api/groupsApi";
 import { useEffect, useState } from "react";
+
+import { Pressable } from "react-native";
+
 
 interface Group {
   id: number;
@@ -53,13 +56,14 @@ export default function GroupsScreen() {
   useEffect(() => {
     loadGroups();
   }, []);
+  
 
   const renderGroupCard = ({ item }: { item: Group }) => (
     <TouchableOpacity
       style={styles.groupCard}
       onPress={() => {
         // Navigate to group details
-        console.log("Tapped group:", item.id);
+        router.push(`/groups/${item.id}`);
       }}
     >
       <View style={styles.cardHeader}>

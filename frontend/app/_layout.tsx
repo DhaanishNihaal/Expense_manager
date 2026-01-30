@@ -30,7 +30,7 @@ export default function RootLayout() {
     }
 
     if (isAuthenticated && inAuthGroup) {
-      router.replace("/groups");
+      router.replace("/groups/groups");
     }
   }, [isAuthenticated, isCheckingAuth]);
 

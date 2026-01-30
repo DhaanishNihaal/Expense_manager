@@ -7,6 +7,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
+import com.bezkoder.springjwt.groups.dto.GroupDetailResponse;
+
 @RestController
 @RequestMapping("/api/groups")
 public class GroupController {
@@ -39,5 +41,11 @@ public class GroupController {
 
         String username = authentication.getName();
         return groupService.getUserGroupsWithMemberCount(username);
+    }
+    @GetMapping("/{groupId}")
+    public GroupDetailResponse getGroupDetails(@PathVariable Long groupId,
+                                               Authentication authentication) {
+
+        return groupService.getGroupDetails(groupId, authentication.getName());
     }
 }

@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
+import com.bezkoder.springjwt.groups.dto.GroupDetailResponse;
+import com.bezkoder.springjwt.groups.dto.MemberResponse;
+
 
 @Service
 public class GroupService {
@@ -104,6 +107,34 @@ public class GroupService {
                     );
                 })
                 .toList();
+    }
+    public GroupDetailResponse getGroupDetails(Long groupId, String username) {
+
+        User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // ensure user belongs to group
+        groupMemberRepository.findByGroupIdAndUserId(groupId, user.getId())
+            .orElseThrow(() -> new RuntimeException("Access denied"));
+
+        Group group = groupRepository.findById(groupId)
+            .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        List<MemberResponse> members =
+            groupMemberRepository.findByGroupId(groupId)
+                .stream()
+                .map(m -> new MemberResponse(
+                    m.getUser().getId(),
+                    m.getUser().getName()
+                ))
+                .toList();
+
+        return new GroupDetailResponse(
+            group.getId(),
+            group.getName(),
+            group.getDescription(),
+            members
+        );
     }
 
     
