@@ -4,7 +4,7 @@ import com.bezkoder.springjwt.groups.Group;
 import com.bezkoder.springjwt.groups.GroupMemberRepository;
 import com.bezkoder.springjwt.groups.GroupRepository;
 import com.bezkoder.springjwt.groups.expense.dto.CreateExpenseRequest;
-import com.bezkoder.springjwt.groups.expense.dto.ExpenseTransactionRequest;
+import com.bezkoder.springjwt.groups.expense.dto.ExpenseTransactionResponse;
 import com.bezkoder.springjwt.models.User;
 import com.bezkoder.springjwt.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -61,12 +61,12 @@ public class ExpenseService {
         Expense savedExpense = expenseRepository.save(expense);
 
         // 5️⃣ Create transactions
-        for (ExpenseTransactionRequest tx : request.getTransactions()) {
+        for (ExpenseTransactionResponse tx : request.getTransactions()) {
 
-            User payer = userRepository.findByUsername(tx.getPayerUsername())
+            User payer = userRepository.findByUsername(tx.getPayerName())
                     .orElseThrow(() -> new RuntimeException("Payer not found"));
 
-            User receiver = userRepository.findByUsername(tx.getReceiverUsername())
+            User receiver = userRepository.findByUsername(tx.getReceiverName())
                     .orElseThrow(() -> new RuntimeException("Receiver not found"));
 
             // Validate both belong to group

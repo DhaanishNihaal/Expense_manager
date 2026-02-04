@@ -5,7 +5,7 @@ import java.util.List;
 public class CreateExpenseRequest {
 
     private String description;
-    private List<ExpenseTransactionRequest> transactions;
+    private List<ExpenseTransactionResponse> transactions;
 
     public String getDescription() {
         return description;
@@ -15,11 +15,11 @@ public class CreateExpenseRequest {
         this.description = description;
     }
 
-    public List<ExpenseTransactionRequest> getTransactions() {
+    public List<ExpenseTransactionResponse> getTransactions() {
         return transactions;
     }
 
-    public void setTransactions(List<ExpenseTransactionRequest> transactions) {
+    public void setTransactions(List<ExpenseTransactionResponse> transactions) {
         this.transactions = transactions;
     }
 }
