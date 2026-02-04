@@ -1,6 +1,9 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
+import { fetchExpensesByGroup } from "../../src/api/expenseApi";
+import { Expense } from "../../src/types/expense";
+import { router } from "expo-router";
 import api from "../../src/api/api";
 
 type Member = {
@@ -19,10 +22,12 @@ export default function GroupDetailsScreen() {
   const { id } = useLocalSearchParams();
   const [group, setGroup] = useState<GroupDetail | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loadingExpenses, setLoadingExpenses] = useState(true);
   useEffect(() => {
     fetchGroup();
-  }, []);
+    fetchExpensesByGroup(Number(id)).then(setExpenses).finally(() => setLoadingExpenses(false));
+  }, [id]);
 
   const fetchGroup = async () => {
     try {
@@ -44,7 +49,7 @@ export default function GroupDetailsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View  style={styles.container}>
       <Text style={styles.title}>{group.name}</Text>
       <Text style={styles.subtitle}>{group.members.length} members</Text>
 
@@ -53,6 +58,27 @@ export default function GroupDetailsScreen() {
         <Text key={m.id} style={styles.member}>
           • {m.name}
         </Text>
+      ))}
+      <Text style={styles.sectionTitle}>Expenses</Text>
+
+      {expenses.map(exp => (
+        <TouchableOpacity
+          key={exp.id}
+          style={styles.expenseCard}
+          onPress={() => {
+            router.push(`/groups/expenses/${exp.id}`);
+          }}
+        >
+          <Text style={styles.expenseTitle}>{exp.title}</Text>
+
+          {exp.description && (
+            <Text style={styles.expenseDescription}>
+              {exp.description}
+            </Text>
+          )}
+
+          <Text>Paid by {exp.createdBy}</Text>
+        </TouchableOpacity>
       ))}
     </View>
   );
@@ -77,5 +103,27 @@ const styles = StyleSheet.create({
   member: {
     fontSize: 16,
     marginTop: 6,
+  },
+  expenseCard: {
+    backgroundColor: "#fff",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  expenseTitle: {
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 16,
+  },
+  expenseDescription: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 4,
   },
 });
