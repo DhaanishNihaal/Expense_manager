@@ -3,6 +3,8 @@ package com.bezkoder.springjwt.groups.expense;
 import com.bezkoder.springjwt.groups.expense.dto.CreateExpenseRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import com.bezkoder.springjwt.groups.expense.dto.ExpenseResponse;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/groups/{groupId}/expenses")
@@ -21,5 +23,12 @@ public class ExpenseController {
 
         String username = authentication.getName();
         expenseService.createExpense(groupId, request, username);
+    }
+    @GetMapping
+    public List<ExpenseResponse> getExpenses(
+        @PathVariable Long groupId,
+        Authentication authentication) {
+        String username = authentication.getName();
+        return expenseService.getExpensesByGroup(groupId, username);
     }
 }

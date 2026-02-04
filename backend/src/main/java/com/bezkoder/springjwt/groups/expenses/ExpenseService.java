@@ -9,6 +9,8 @@ import com.bezkoder.springjwt.models.User;
 import com.bezkoder.springjwt.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.bezkoder.springjwt.groups.expense.dto.ExpenseResponse;
+import java.util.List;  
 
 @Service
 public class ExpenseService {
@@ -83,4 +85,40 @@ public class ExpenseService {
             transactionRepository.save(transaction);
         }
     }
+    @Transactional(readOnly = true)
+    public List<ExpenseResponse> getExpensesByGroup(Long groupId, String username) {
+
+    // 1️⃣ Get logged-in user
+    User user = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+    // 2️⃣ Verify user belongs to the group
+    boolean isMember = groupMemberRepository
+            .existsByGroupIdAndUserId(groupId, user.getId());
+
+    if (!isMember) {
+        throw new RuntimeException("User is not a member of this group");
+    }
+
+    // 3️⃣ Fetch expenses of the group
+    List<Expense> expenses = expenseRepository.findByGroupId(groupId);
+
+    // 4️⃣ Map Expense → ExpenseResponse DTO
+    return expenses.stream()
+            .map(expense -> {
+                ExpenseResponse response = new ExpenseResponse();
+                response.setId(expense.getId());
+                response.setTitle(expense.getTitle());
+                response.setDescription(expense.getDescription());
+                response.setTotalAmount(expense.getTotalAmount());
+                response.setCreatedAt(expense.getCreatedAt());
+                response.setCreatedByUsername(
+                        expense.getCreatedBy().getUsername()
+                );
+
+                return response;
+            })
+            .toList();
+    }
+
 }
