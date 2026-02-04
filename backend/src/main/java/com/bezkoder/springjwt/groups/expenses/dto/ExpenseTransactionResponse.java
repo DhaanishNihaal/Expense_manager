@@ -1,6 +1,8 @@
-package com.bezkoder.springjwt.groups.expense.dto;
+package com.bezkoder.springjwt.groups.expenses.dto;
 
 public class ExpenseTransactionResponse {
+
+    private Long transactionId;
 
     private Long payerId;
     private String payerName;
@@ -11,17 +13,23 @@ public class ExpenseTransactionResponse {
     private Double amount;
 
     public ExpenseTransactionResponse(
+            Long transactionId,
             Long payerId,
             String payerName,
             Long receiverId,
             String receiverName,
             Double amount
     ) {
+        this.transactionId = transactionId;
         this.payerId = payerId;
         this.payerName = payerName;
         this.receiverId = receiverId;
         this.receiverName = receiverName;
         this.amount = amount;
+    }
+
+    public Long getTransactionId() {
+        return transactionId;
     }
 
     public Long getPayerId() {

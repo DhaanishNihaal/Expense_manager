@@ -1,4 +1,7 @@
-package com.bezkoder.springjwt.groups.expense;
+package com.bezkoder.springjwt.groups.expenses;
+import com.bezkoder.springjwt.groups.expenses.ExpenseTransaction;
+import com.bezkoder.springjwt.groups.expenses.dto.ExpenseTransactionResponse;
+
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -20,4 +23,5 @@ public interface ExpenseTransactionRepository
 
     // Get all transactions for all expenses in a group
     List<ExpenseTransaction> findByExpense_GroupId(Long groupId);
+
 }

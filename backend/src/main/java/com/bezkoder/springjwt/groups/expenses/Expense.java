@@ -1,4 +1,4 @@
-package com.bezkoder.springjwt.groups.expense;
+package com.bezkoder.springjwt.groups.expenses;
 
 import com.bezkoder.springjwt.groups.Group;
 import com.bezkoder.springjwt.models.User;

@@ -1,15 +1,15 @@
-package com.bezkoder.springjwt.groups.expense;
+package com.bezkoder.springjwt.groups.expenses;
 
 import com.bezkoder.springjwt.groups.Group;
 import com.bezkoder.springjwt.groups.GroupMemberRepository;
 import com.bezkoder.springjwt.groups.GroupRepository;
-import com.bezkoder.springjwt.groups.expense.dto.CreateExpenseRequest;
-import com.bezkoder.springjwt.groups.expense.dto.ExpenseTransactionResponse;
+import com.bezkoder.springjwt.groups.expenses.dto.CreateExpenseRequest;
+import com.bezkoder.springjwt.groups.expenses.dto.ExpenseTransactionResponse;
 import com.bezkoder.springjwt.models.User;
 import com.bezkoder.springjwt.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.bezkoder.springjwt.groups.expense.dto.ExpenseResponse;
+import com.bezkoder.springjwt.groups.expenses.dto.ExpenseResponse;
 import java.util.List;  
 
 @Service

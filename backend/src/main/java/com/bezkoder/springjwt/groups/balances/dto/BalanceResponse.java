@@ -1,4 +1,4 @@
-package com.bezkoder.springjwt.groups.balance.dto;
+package com.bezkoder.springjwt.groups.balances.dto;
 
 public class BalanceResponse {
 

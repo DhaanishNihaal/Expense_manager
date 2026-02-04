@@ -1,9 +1,9 @@
-package com.bezkoder.springjwt.groups.expense;
+package com.bezkoder.springjwt.groups.expenses;
 
-import com.bezkoder.springjwt.groups.expense.dto.CreateExpenseRequest;
+import com.bezkoder.springjwt.groups.expenses.dto.CreateExpenseRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import com.bezkoder.springjwt.groups.expense.dto.ExpenseResponse;
+import com.bezkoder.springjwt.groups.expenses.dto.ExpenseResponse;
 import java.util.List;
 
 @RestController

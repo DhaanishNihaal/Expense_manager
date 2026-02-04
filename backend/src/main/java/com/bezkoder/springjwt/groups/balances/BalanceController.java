@@ -1,6 +1,6 @@
-package com.bezkoder.springjwt.groups.balance;
+package com.bezkoder.springjwt.groups.balances;
 
-import com.bezkoder.springjwt.groups.balance.dto.BalanceResponse;
+import com.bezkoder.springjwt.groups.balances.dto.BalanceResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 

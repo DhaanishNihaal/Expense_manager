@@ -1,8 +1,8 @@
-package com.bezkoder.springjwt.groups.balance;
+package com.bezkoder.springjwt.groups.balances;
 
-import com.bezkoder.springjwt.groups.expense.ExpenseTransaction;
-import com.bezkoder.springjwt.groups.expense.ExpenseTransactionRepository;
-import com.bezkoder.springjwt.groups.balance.dto.BalanceResponse;
+import com.bezkoder.springjwt.groups.expenses.ExpenseTransaction;
+import com.bezkoder.springjwt.groups.expenses.ExpenseTransactionRepository;
+import com.bezkoder.springjwt.groups.balances.dto.BalanceResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.*;

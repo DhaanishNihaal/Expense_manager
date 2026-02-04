@@ -1,4 +1,4 @@
-package com.bezkoder.springjwt.groups.expense.dto;
+package com.bezkoder.springjwt.groups.expenses.dto;
 
 import java.time.LocalDateTime;
 

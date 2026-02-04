@@ -1,4 +1,4 @@
-package com.bezkoder.springjwt.groups.expense;
+package com.bezkoder.springjwt.groups.expenses;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
