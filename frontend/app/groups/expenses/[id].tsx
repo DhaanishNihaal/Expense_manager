@@ -1,249 +1,506 @@
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, StyleSheet, Modal, TextInput } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  TextInput,
+  Alert,
+  Platform,
+} from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 
-import { fetchExpenseTransactions } from "@/src/api/transactionApi";
+import { fetchExpenseTransactions, addExpenseTransaction, deleteExpenseTransaction } from "@/src/api/transactionApi";
+import { fetchGroupMembers } from "@/src/api/groupsApi";
 import { ExpenseTransaction } from "@/src/types/transaction";
-import { addExpenseTransaction } from "@/src/api/transactionApi";
-import { deleteExpenseTransaction } from "@/src/api/transactionApi";
-import { Alert,Platform} from "react-native";
+import { User } from "@/src/types/user";
+
 export default function ExpenseTransactionsScreen() {
-    const {id} = useLocalSearchParams();
+  const { id, groupId } = useLocalSearchParams();
+
+  // Transaction state
+  const [transactions, setTransactions] = useState<ExpenseTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // Members & form state
+  const [members, setMembers] = useState<User[]>([]);
+  const [selectedReceivers, setSelectedReceivers] = useState<(number | "")[]>([""]); // Start with one empty dropdown
+  const [excludeMe, setExcludeMe] = useState(false);
+  const [amount, setAmount] = useState("");
+  const [loadingMembers, setLoadingMembers] = useState(false);
+
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  const loadTransactions = async () => {
+    try {
+      const res = await fetchExpenseTransactions(Number(id));
+      setTransactions(res.data);
+    } catch (err) {
+      console.error("Failed to fetch transactions", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Load group members when modal opens
+   */
+  const loadGroupMembers = async () => {
+    if (!groupId) {
+      console.error("Group ID not available");
+      Alert.alert("Error", "Could not determine group");
+      return;
+    }
     
-    const [transactions, setTransactions] = useState<ExpenseTransaction[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [sowAddModal,setShowAddModal]=useState(false);
-    const [payerId, setPayerId] = useState("");
-    const [receiverIds, setReceiverIds] = useState("");
-    const [amount, setAmount] = useState("");
+    setLoadingMembers(true);
+    try {
+      const data = await fetchGroupMembers(Number(groupId));
+      setMembers(data);
+    } catch (err) {
+      console.error("Failed to fetch group members", err);
+      Alert.alert("Error", "Could not load group members");
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
 
-    useEffect(() => {
-        loadTransactions();
-    }, []);
+  /**
+   * Get available users for a specific dropdown
+   * Rules:
+   * - Remove already selected users (except current dropdown)
+   * - Remove logged-in user if "Doesn't include you" is checked
+   * - Always include the currently selected user in its own dropdown
+   */
+  const getAvailableUsersForDropdown = (dropdownIndex: number): User[] => {
+    let available = [...members];
 
-    const loadTransactions = async () => {
-        try {
-            const res = await fetchExpenseTransactions(Number(id));
-            setTransactions(res.data);
-        } catch (err) {
-            console.error("Failed to fetch transactions", err);
-        } finally {
-            setLoading(false);
-        }
-    };
-    const handleAddTransaction = async () => {
-  await addExpenseTransaction(Number(id), {
-    receiverIds: receiverIds.split(",").map((s) => s.trim()),
-    totalAmount: Number(amount),
-  });
-  
-
-  setShowAddModal(false);
-  loadTransactions(); // refetch list
-};
-    const handleDeleteTransaction = async (transactionId: number) => {
-  try {
-    await deleteExpenseTransaction(Number(id), transactionId);
-    loadTransactions(); // refresh list
-  } catch (err) {
-    console.error("Failed to delete transaction", err);
-    alert("Failed to delete transaction");
-  }
-};
-
-    const totalAmount = transactions.reduce(
-        (sum, t) => sum + t.amount,
-        0
-    );
-
-    
-
-    if (loading) {
-        return (
-            <View style={{ flex: 1, justifyContent: "center" }}>
-                <ActivityIndicator size="large" />
-            </View>
-        );
+    // Rule 1: Remove logged-in user if excludeMe is checked
+    if (excludeMe) {
+      // TODO: Get current user ID from auth context
+      // For now, we'll assume the logged-in user is excluded from the list
     }
 
+    // Rule 2: Remove already selected users from other dropdowns
+    const selectedUserIds = selectedReceivers.filter(
+      (id, idx) => id !== "" && idx !== dropdownIndex
+    ) as number[];
+
+    available = available.filter((user) => !selectedUserIds.includes(user.id));
+
+    return available;
+  };
+
+  /**
+   * Handle receiver selection change
+   */
+  const handleReceiverChange = (value: string, index: number) => {
+    const newReceivers = [...selectedReceivers];
+    newReceivers[index] = value === "" ? "" : parseInt(value, 10);
+    setSelectedReceivers(newReceivers);
+
+    // Auto-add new dropdown if user selected someone in the last dropdown
+    if (
+      value !== "" &&
+      index === selectedReceivers.length - 1 &&
+      selectedReceivers.length < members.length
+    ) {
+      setSelectedReceivers([...newReceivers, ""]);
+    }
+  };
+
+  /**
+   * Handle "Doesn't include you" checkbox
+   */
+  const handleExcludeMeChange = () => {
+    const newExcludeMe = !excludeMe;
+    setExcludeMe(newExcludeMe);
+
+    // If unchecking and user was removed, we don't need to do anything special
+    // If checking, we need to remove current user from any dropdowns and reset
+    if (newExcludeMe) {
+      // TODO: Remove logged-in user ID from selectedReceivers
+    }
+  };
+
+  /**
+   * Select all available members as receivers
+   */
+  const handleSelectAll = () => {
+    const allMemberIds = members.map((member) => member.id);
+    
+    // If "Doesn't include you" is checked, filter out current user
+    // For now, we'll select all members
+    // The current user filtering will be handled when fetching members
+    
+    setSelectedReceivers(allMemberIds);
+  };
+
+  /**
+   * Validate and submit transaction
+   */
+  const handleAddTransaction = async () => {
+    // Filter out empty selections
+    const validReceiverIds = selectedReceivers.filter((id) => id !== "") as number[];
+
+    // Validation
+    if (validReceiverIds.length === 0) {
+      Alert.alert("Error", "Please select at least one receiver");
+      return;
+    }
+
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+      Alert.alert("Error", "Please enter a valid amount");
+      return;
+    }
+
+    try {
+      await addExpenseTransaction(Number(id), {
+        receiverIds: validReceiverIds,
+        totalAmount: Number(amount),
+      });
+
+      // Reset form
+      setShowAddModal(false);
+      setSelectedReceivers([""]);
+      setAmount("");
+      setExcludeMe(false);
+
+      // Refresh transactions
+      loadTransactions();
+      Alert.alert("Success", "Transaction added");
+    } catch (err) {
+      console.error("Failed to add transaction", err);
+      Alert.alert("Error", "Failed to add transaction");
+    }
+  };
+
+  /**
+   * Handle delete transaction
+   */
+  const handleDeleteTransaction = async (transactionId: number) => {
+    try {
+      await deleteExpenseTransaction(Number(id), transactionId);
+      loadTransactions();
+    } catch (err) {
+      console.error("Failed to delete transaction", err);
+      Alert.alert("Error", "Failed to delete transaction");
+    }
+  };
+
+  const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+
+  if (loading) {
     return (
-        <View style={styles.container}>
-            <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 140 }}>
-            <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 12 }}>
-                Transactions
-            </Text>
-
-            {transactions.map((t) => (
-  <View
-    key={t.transactionId}
-    style={{
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: 14,
-      marginBottom: 10,
-      backgroundColor: "#f2f2f2",
-      borderRadius: 8,
-    }}
-  >
-    {/* LEFT SIDE */}
-    <View>
-      <Text style={{ fontSize: 16 }}>
-        {t.payerName} → {t.receiverName}
-      </Text>
-      <Text style={{ fontWeight: "bold", marginTop: 4 }}>
-        ₹ {t.amount.toFixed(2)}
-      </Text>
-    </View>
-
-    {/* RIGHT SIDE DELETE */}
-    <TouchableOpacity
-      onPress={() => {
-  if (Platform.OS === "web") {
-    const ok = window.confirm("Delete this transaction?");
-    if (ok) handleDeleteTransaction(t.transactionId);
-  } else {
-    Alert.alert(
-      "Delete transaction?",
-      "This action cannot be undone",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            handleDeleteTransaction(t.transactionId);
-            console.log(t.transactionId);}
-        },
-      ]
+      <View style={{ flex: 1, justifyContent: "center" }}>
+        <ActivityIndicator size="large" />
+      </View>
     );
   }
-}}
-    >
-      <Text style={{ fontSize: 18, color: "red" }}>🗑️</Text>
-    </TouchableOpacity>
-  </View>
-))}
-            
-            {/* Floating Add Transaction Button */}
-            <TouchableOpacity
-                style={styles.createButton}
-                onPress={() => setShowAddModal(true)}
-            >
-                <Text style={styles.createButtonText}>+ Add Transaction</Text>
-            </TouchableOpacity>
 
-            <View 
-                style={{
-                    marginTop: 20,
-                    paddingTop: 12,
-                    borderTopWidth: 1,
-                }}
-            >
-                <Text style={{ fontSize: 18, fontWeight: "bold" }}>
-                    Total: ₹ {totalAmount}
-                </Text>
+  return (
+    <View style={styles.container}>
+      <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 140 }}>
+        <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 12 }}>
+          Transactions
+        </Text>
+
+        {/* Transaction List */}
+        {transactions.map((t) => (
+          <View
+            key={t.transactionId}
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: 14,
+              marginBottom: 10,
+              backgroundColor: "#f2f2f2",
+              borderRadius: 8,
+            }}
+          >
+            {/* LEFT SIDE */}
+            <View>
+              <Text style={{ fontSize: 16 }}>
+                {t.payerName} → {t.receiverName}
+              </Text>
+              <Text style={{ fontWeight: "bold", marginTop: 4 }}>
+                ₹ {t.amount.toFixed(2)}
+              </Text>
             </View>
-            </ScrollView>
 
-            <Modal
-                visible={sowAddModal}
-                transparent
-                animationType="slide"
-                onRequestClose={() => setShowAddModal(false)}
+            {/* RIGHT SIDE DELETE */}
+            <TouchableOpacity
+              onPress={() => {
+                if (Platform.OS === "web") {
+                  const ok = window.confirm("Delete this transaction?");
+                  if (ok) handleDeleteTransaction(t.transactionId);
+                } else {
+                  Alert.alert("Delete transaction?", "This action cannot be undone", [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Delete",
+                      style: "destructive",
+                      onPress: () => {
+                        handleDeleteTransaction(t.transactionId);
+                      },
+                    },
+                  ]);
+                }
+              }}
             >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 8 }}>Add Transaction</Text>
-                        
-                        <TextInput
-                            placeholder="receiverIds (comma separated)"
-                            style={styles.input}
-                            value={receiverIds}
-                            onChangeText={setReceiverIds}
-                        />
-                        <TextInput
-                            placeholder="Total amount"
-                            style={styles.input}
-                            value={amount}
-                            onChangeText={setAmount}
-                            keyboardType="numeric"
-                        />
+              <Text style={{ fontSize: 18, color: "red" }}>🗑️</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
 
-                        <View style={styles.modalButtons}>
-                            <TouchableOpacity style={[styles.modalButton, { backgroundColor: "#007AFF" }]} onPress={handleAddTransaction}>
-                                <Text style={styles.modalButtonText}>Add</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.modalButton, { backgroundColor: "#777" }]} onPress={() => { setShowAddModal(false); setPayerId(""); setReceiverIds(""); setAmount(""); }}>
-                                <Text style={styles.modalButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
+        {/* Total */}
+        <View
+          style={{
+            marginTop: 20,
+            paddingTop: 12,
+            borderTopWidth: 1,
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+            Total: ₹ {totalAmount.toFixed(2)}
+          </Text>
         </View>
-    );
+      </ScrollView>
+
+      {/* Floating Add Transaction Button */}
+      <TouchableOpacity
+        style={styles.createButton}
+        onPress={() => {
+          setShowAddModal(true);
+          loadGroupMembers();
+        }}
+      >
+        <Text style={styles.createButtonText}>+ Add Transaction</Text>
+      </TouchableOpacity>
+
+      {/* Add Transaction Modal */}
+      <Modal
+        visible={showAddModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setShowAddModal(false);
+          setSelectedReceivers([""]);
+          setAmount("");
+          setExcludeMe(false);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <ScrollView style={styles.modalContent}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 16 }}>
+              Add Transaction
+            </Text>
+
+            {loadingMembers ? (
+              <ActivityIndicator size="large" color="#007AFF" />
+            ) : (
+              <>
+                {/* Receiver Dropdowns Section */}
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "600" }}>
+                    Receivers
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.selectAllButton}
+                    onPress={handleSelectAll}
+                  >
+                    <Text style={styles.selectAllText}>Select All</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Multiple Receiver Dropdowns */}
+                {selectedReceivers.map((selectedId, index) => (
+                  <View key={index} style={{ marginBottom: 12 }}>
+                    <Text style={{ fontSize: 12, color: "#666", marginBottom: 4 }}>
+                      Receiver {index + 1}
+                    </Text>
+                    <View style={styles.pickerContainer}>
+                      <Picker
+                        selectedValue={selectedId === "" ? "" : String(selectedId)}
+                        onValueChange={(value) => handleReceiverChange(value, index)}
+                        style={styles.picker}
+                      >
+                        <Picker.Item label="Select user" value="" />
+                        {getAvailableUsersForDropdown(index).map((user) => (
+                          <Picker.Item key={user.id} label={user.name} value={String(user.id)} />
+                        ))}
+                      </Picker>
+                    </View>
+                  </View>
+                ))}
+
+                {/* "Doesn't include you" Checkbox */}
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  onPress={handleExcludeMeChange}
+                >
+                  <View style={[styles.checkbox, excludeMe && styles.checkboxChecked]}>
+                    {excludeMe && <Text style={styles.checkboxCheck}>✓</Text>}
+                  </View>
+                  <Text style={{ marginLeft: 10, fontSize: 14 }}>Doesn't include you</Text>
+                </TouchableOpacity>
+
+                {/* Amount Input */}
+                <Text style={{ fontSize: 14, fontWeight: "600", marginBottom: 8, marginTop: 16 }}>
+                  Total Amount
+                </Text>
+                <TextInput
+                  placeholder="Enter amount"
+                  style={styles.input}
+                  value={amount}
+                  onChangeText={setAmount}
+                  keyboardType="decimal-pad"
+                />
+
+                {/* Action Buttons */}
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: "#007AFF" }]}
+                    onPress={handleAddTransaction}
+                  >
+                    <Text style={styles.modalButtonText}>Add</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: "#777" }]}
+                    onPress={() => {
+                      setShowAddModal(false);
+                      setSelectedReceivers([""]);
+                      setAmount("");
+                      setExcludeMe(false);
+                    }}
+                  >
+                    <Text style={styles.modalButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </ScrollView>
+        </View>
+      </Modal>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#F5F7FA",
-    },
-    createButton: {
-        position: "absolute",
-        bottom: 30,
-        right: 20,
-        left: 20,
-        backgroundColor: "#007AFF",
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-    },
-    createButtonText: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "bold",
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    modalContent: {
-        width: "90%",
-        backgroundColor: "#fff",
-        padding: 20,
-        borderRadius: 12,
-    },
-    input: {
-        borderWidth: 1,
-        borderColor: "#E5E5E5",
-        padding: 10,
-        borderRadius: 8,
-        marginBottom: 10,
-    },
-    modalButtons: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        marginTop: 8,
-    },
-    modalButton: {
-        flex: 1,
-        paddingVertical: 12,
-        borderRadius: 8,
-        alignItems: "center",
-        marginHorizontal: 5,
-    },
-    modalButtonText: {
-        color: "#fff",
-        fontWeight: "600",
-    },
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F7FA",
+  },
+  createButton: {
+    position: "absolute",
+    bottom: 30,
+    right: 20,
+    left: 20,
+    backgroundColor: "#007AFF",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  createButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "90%",
+    maxHeight: "80%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 12,
+    marginVertical: "auto",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    fontSize: 14,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+    borderRadius: 8,
+    overflow: "hidden",
+    marginBottom: 12,
+  },
+  picker: {
+    height: 50,
+    width: "100%",
+  },
+  selectAllButton: {
+    backgroundColor: "#34C759",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  selectAllText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 12,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: "#007AFF",
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: "#007AFF",
+  },
+  checkboxCheck: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 12,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginHorizontal: 5,
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
 });

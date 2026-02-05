@@ -66,7 +66,7 @@ export default function GroupDetailsScreen() {
           key={exp.id}
           style={styles.expenseCard}
           onPress={() => {
-            router.push(`/groups/expenses/${exp.id}`);
+            router.push(`/groups/expenses/${exp.id}?groupId=${id}`);
           }}
         >
           <Text style={styles.expenseTitle}>{exp.title}</Text>

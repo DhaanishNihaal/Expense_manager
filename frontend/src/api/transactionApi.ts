@@ -1,6 +1,13 @@
 import api from "./api";
 
 /**
+ * Get expense details including group ID
+ */
+export const fetchExpenseDetails = (expenseId: number) => {
+  return api.get(`/api/expenses/${expenseId}`);
+};
+
+/**
  * Get all transactions for a single expense
  * (who paid whom, how much)
  */
