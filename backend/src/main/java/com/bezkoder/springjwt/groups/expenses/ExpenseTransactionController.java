@@ -2,6 +2,7 @@ package com.bezkoder.springjwt.groups.expenses;
 
 import com.bezkoder.springjwt.groups.expenses.dto.CreateTransactionRequest;
 import com.bezkoder.springjwt.groups.expenses.dto.ExpenseTransactionResponse;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,9 +34,9 @@ public class ExpenseTransactionController {
     @PostMapping
     public void addTransaction(
             @PathVariable Long expenseId,
-            @RequestBody CreateTransactionRequest request) {
-
-        transactionService.addTransaction(expenseId, request);
+            @RequestBody CreateTransactionRequest request,Authentication authentication) {
+            String username = authentication.getName();
+        transactionService.addTransaction(expenseId, username,request);
     }
 
     // ============================

@@ -7,3 +7,9 @@ import api from "./api";
 export const fetchExpenseTransactions= (expenseId: number) => {
   return api.get(`/api/expenses/${expenseId}/transactions`);
 };
+
+export const addExpenseTransaction = (expenseId: number, data: any) =>
+  api.post(`/api/expenses/${expenseId}/transactions`, data);
+
+export const deleteExpenseTransaction = (expenseId: number, transactionId: number) =>
+  api.delete(`/api/expenses/${expenseId}/transactions/${transactionId}`);

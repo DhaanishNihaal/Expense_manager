@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 @Service
 public class ExpenseTransactionService {
 
@@ -51,38 +53,53 @@ public class ExpenseTransactionService {
     // ============================
     @Transactional
     public void addTransaction(
-            Long expenseId,
-            CreateTransactionRequest request
-    ) {
+        Long expenseId,
+        String username,
+        CreateTransactionRequest request
+) {
+    User payer = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Expense expense = expenseRepository.findById(expenseId)
-                .orElseThrow(() -> new RuntimeException("Expense not found"));
+    Expense expense = expenseRepository.findById(expenseId)
+            .orElseThrow(() -> new RuntimeException("Expense not found"));
 
-        User payer = userRepository.findById(request.getPayerId())
-                .orElseThrow(() -> new RuntimeException("Payer not found"));
+    int receiverCount = request.getReceiverIds().size();
 
-        List<Long> receiverIds = request.getReceiverIds();
-        if (receiverIds == null || receiverIds.isEmpty()) {
-            throw new RuntimeException("Receivers required");
+
+    BigDecimal total = BigDecimal.valueOf(request.getTotalAmount());
+
+    // base split rounded DOWN to 2 decimals
+    BigDecimal base =
+        total.divide(
+            BigDecimal.valueOf(receiverCount),
+            2,
+            RoundingMode.DOWN
+        );
+
+    // base × count
+    BigDecimal assigned =
+        base.multiply(BigDecimal.valueOf(receiverCount));
+
+    // exact remainder
+    BigDecimal remainder = total.subtract(assigned);
+
+    for (int i = 0; i < receiverCount; i++) {
+
+        BigDecimal amount = base;
+
+        // last receiver absorbs remainder
+        if (i == receiverCount - 1) {
+        amount = amount.add(remainder);
         }
 
-        double splitAmount =
-                request.getTotalAmount() / receiverIds.size();
-
-        for (Long receiverId : receiverIds) {
-            User receiver = userRepository.findById(receiverId)
-                    .orElseThrow(() -> new RuntimeException("Receiver not found"));
-
-            ExpenseTransaction tx = new ExpenseTransaction();
-            tx.setExpense(expense);
-            tx.setPayer(payer);
-            tx.setReceiver(receiver);
-            tx.setAmount(splitAmount);
-
-            transactionRepository.save(tx);
+        ExpenseTransaction tx = new ExpenseTransaction();
+        tx.setExpense(expense);
+        tx.setPayer(payer);
+        tx.setReceiver(userRepository.findById(request.getReceiverIds().get(i)).orElseThrow());
+        tx.setAmount(amount.doubleValue()); // DB still double is fine
+        transactionRepository.save(tx);
         }
     }
-
     // ============================
     // DELETE transaction
     // ============================

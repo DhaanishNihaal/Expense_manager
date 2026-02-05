@@ -4,17 +4,8 @@ import java.util.List;
 
 public class CreateTransactionRequest {
 
-    private Long payerId;
     private List<Long> receiverIds;
     private Double totalAmount;
-
-    public Long getPayerId() {
-        return payerId;
-    }
-
-    public void setPayerId(Long payerId) {
-        this.payerId = payerId;
-    }
 
     public List<Long> getReceiverIds() {
         return receiverIds;
