@@ -1,5 +1,5 @@
 export type ExpenseTransaction = {
-  id: number;
+  transactionId: number;
   payerId: number;
   payerName: string;
   receiverId: number;

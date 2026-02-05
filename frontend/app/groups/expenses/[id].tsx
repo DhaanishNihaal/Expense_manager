@@ -5,10 +5,11 @@ import { useLocalSearchParams } from "expo-router";
 import { fetchExpenseTransactions } from "@/src/api/transactionApi";
 import { ExpenseTransaction } from "@/src/types/transaction";
 import { addExpenseTransaction } from "@/src/api/transactionApi";
-
+import { deleteExpenseTransaction } from "@/src/api/transactionApi";
+import { Alert,Platform} from "react-native";
 export default function ExpenseTransactionsScreen() {
     const {id} = useLocalSearchParams();
-
+    
     const [transactions, setTransactions] = useState<ExpenseTransaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [sowAddModal,setShowAddModal]=useState(false);
@@ -35,9 +36,19 @@ export default function ExpenseTransactionsScreen() {
     receiverIds: receiverIds.split(",").map((s) => s.trim()),
     totalAmount: Number(amount),
   });
+  
 
   setShowAddModal(false);
   loadTransactions(); // refetch list
+};
+    const handleDeleteTransaction = async (transactionId: number) => {
+  try {
+    await deleteExpenseTransaction(Number(id), transactionId);
+    loadTransactions(); // refresh list
+  } catch (err) {
+    console.error("Failed to delete transaction", err);
+    alert("Failed to delete transaction");
+  }
 };
 
     const totalAmount = transactions.reduce(
@@ -63,23 +74,56 @@ export default function ExpenseTransactionsScreen() {
             </Text>
 
             {transactions.map((t) => (
-                <View
-                    key={t.id}
-                    style={{
-                        padding: 14,
-                        marginBottom: 10,
-                        backgroundColor: "#f2f2f2",
-                        borderRadius: 8,
-                    }}
-                >
-                    <Text style={{ fontSize: 16 }}>
-                        {t.payerName} → {t.receiverName}
-                    </Text>
-                    <Text style={{ fontWeight: "bold", marginTop: 4 }}>
-                        ₹ {t.amount}
-                    </Text>
-                </View>
-            ))}
+  <View
+    key={t.transactionId}
+    style={{
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 14,
+      marginBottom: 10,
+      backgroundColor: "#f2f2f2",
+      borderRadius: 8,
+    }}
+  >
+    {/* LEFT SIDE */}
+    <View>
+      <Text style={{ fontSize: 16 }}>
+        {t.payerName} → {t.receiverName}
+      </Text>
+      <Text style={{ fontWeight: "bold", marginTop: 4 }}>
+        ₹ {t.amount.toFixed(2)}
+      </Text>
+    </View>
+
+    {/* RIGHT SIDE DELETE */}
+    <TouchableOpacity
+      onPress={() => {
+  if (Platform.OS === "web") {
+    const ok = window.confirm("Delete this transaction?");
+    if (ok) handleDeleteTransaction(t.transactionId);
+  } else {
+    Alert.alert(
+      "Delete transaction?",
+      "This action cannot be undone",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            handleDeleteTransaction(t.transactionId);
+            console.log(t.transactionId);}
+        },
+      ]
+    );
+  }
+}}
+    >
+      <Text style={{ fontSize: 18, color: "red" }}>🗑️</Text>
+    </TouchableOpacity>
+  </View>
+))}
             
             {/* Floating Add Transaction Button */}
             <TouchableOpacity
