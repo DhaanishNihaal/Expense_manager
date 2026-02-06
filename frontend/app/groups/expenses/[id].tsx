@@ -25,6 +25,7 @@ export default function ExpenseTransactionsScreen() {
   // Transaction state
   const [transactions, setTransactions] = useState<ExpenseTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedPayers, setExpandedPayers] = useState<Set<number>>(new Set());
 
   // Modal state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -196,7 +197,92 @@ export default function ExpenseTransactionsScreen() {
     }
   };
 
+  /**
+   * Toggle payer expansion
+   */
+  const toggle = (payerId: number) => {
+    const newExpanded = new Set(expandedPayers);
+    if (newExpanded.has(payerId)) {
+      newExpanded.delete(payerId);
+    } else {
+      newExpanded.add(payerId);
+    }
+    setExpandedPayers(newExpanded);
+  };
+
+  /**
+   * Group transactions by payer
+   */
+  const groupedByPayer = transactions.reduce((acc, tx) => {
+    const key = tx.payerId;
+
+    if (!acc[key]) {
+      acc[key] = {
+        payerId: tx.payerId,
+        payerName: tx.payerName,
+        total: 0,
+        splits: []
+      };
+    }
+
+    acc[key].total += tx.amount;
+    acc[key].splits.push(tx);
+
+    return acc;
+  }, {} as Record<number, any>);
+
+  const payerSummaries = Object.values(groupedByPayer);
+
   const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+
+  /**
+   * Calculate net balances per user
+   */
+  const balances: Record<string, number> = {};
+
+  transactions.forEach((tx) => {
+    const payer = tx.payerName;
+    const receiver = tx.receiverName;
+    const amount = tx.amount;
+
+    balances[payer] = (balances[payer] || 0) + amount;
+    balances[receiver] = (balances[receiver] || 0) - amount;
+  });
+
+  /**
+   * Separate creditors and debtors
+   */
+  const creditors: Array<{ user: string; amount: number }> = [];
+  const debtors: Array<{ user: string; amount: number }> = [];
+
+  Object.entries(balances).forEach(([user, balance]) => {
+    if (balance > 0) creditors.push({ user, amount: balance });
+    if (balance < 0) debtors.push({ user, amount: -balance });
+  });
+
+  /**
+   * Greedy settlement algorithm
+   */
+  const settlements: Array<{ from: string; to: string; amount: number }> = [];
+
+  let i = 0,
+    j = 0;
+
+  while (i < debtors.length && j < creditors.length) {
+    const payAmount = Math.min(debtors[i].amount, creditors[j].amount);
+
+    settlements.push({
+      from: debtors[i].user,
+      to: creditors[j].user,
+      amount: payAmount,
+    });
+
+    debtors[i].amount -= payAmount;
+    creditors[j].amount -= payAmount;
+
+    if (debtors[i].amount === 0) i++;
+    if (creditors[j].amount === 0) j++;
+  }
 
   if (loading) {
     return (
@@ -213,52 +299,88 @@ export default function ExpenseTransactionsScreen() {
           Transactions
         </Text>
 
-        {/* Transaction List */}
-        {transactions.map((t) => (
-          <View
-            key={t.transactionId}
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: 14,
-              marginBottom: 10,
-              backgroundColor: "#f2f2f2",
-              borderRadius: 8,
-            }}
-          >
-            {/* LEFT SIDE */}
-            <View>
-              <Text style={{ fontSize: 16 }}>
-                {t.payerName} → {t.receiverName}
-              </Text>
-              <Text style={{ fontWeight: "bold", marginTop: 4 }}>
-                ₹ {t.amount.toFixed(2)}
-              </Text>
-            </View>
-
-            {/* RIGHT SIDE DELETE */}
-            <TouchableOpacity
-              onPress={() => {
-                if (Platform.OS === "web") {
-                  const ok = window.confirm("Delete this transaction?");
-                  if (ok) handleDeleteTransaction(t.transactionId);
-                } else {
-                  Alert.alert("Delete transaction?", "This action cannot be undone", [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Delete",
-                      style: "destructive",
-                      onPress: () => {
-                        handleDeleteTransaction(t.transactionId);
-                      },
-                    },
-                  ]);
-                }
+        {/* Payer Summary List */}
+        {payerSummaries.map((payer) => (
+          <View key={payer.payerId} style={{ marginBottom: 12 }}>
+            {/* Summary Row - Tap to expand */}
+            <TouchableOpacity 
+              onPress={() => toggle(payer.payerId)}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: 14,
+                backgroundColor: "#fff",
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: "#E5E5EA",
               }}
             >
-              <Text style={{ fontSize: 18, color: "red" }}>🗑️</Text>
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "#333" }}>
+                {payer.payerName} paid
+              </Text>
+              <View style={{ alignItems: "flex-end" }}>
+                <Text style={{ fontSize: 18, fontWeight: "bold", color: "#333" }}>
+                  ₹{payer.total.toFixed(2)}
+                </Text>
+                <Text style={{ fontSize: 12, color: "#666" }}>
+                  {expandedPayers.has(payer.payerId) ? "▼" : "▶"}
+                </Text>
+              </View>
             </TouchableOpacity>
+
+            {/* Expanded Splits */}
+            {expandedPayers.has(payer.payerId) && (
+              <View style={{ backgroundColor: "#f2f2f2", borderRadius: 8, borderTopLeftRadius: 0, borderTopRightRadius: 0, paddingVertical: 8 }}>
+                {payer.splits.map((split: ExpenseTransaction) => (
+                  <View 
+                    key={split.transactionId} 
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#E5E5EA",
+                    }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, color: "#333" }}>
+                        {payer.payerName} → {split.receiverName}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: "#666", marginTop: 2 }}>
+                        ₹{split.amount.toFixed(2)}
+                      </Text>
+                    </View>
+
+                    {/* Delete Button */}
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (Platform.OS === "web") {
+                          const ok = window.confirm("Delete this transaction?");
+                          if (ok) handleDeleteTransaction(split.transactionId);
+                        } else {
+                          Alert.alert("Delete transaction?", "This action cannot be undone", [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                              text: "Delete",
+                              style: "destructive",
+                              onPress: () => {
+                                handleDeleteTransaction(split.transactionId);
+                              },
+                            },
+                          ]);
+                        }
+                      }}
+                      style={{ marginLeft: 10 }}
+                    >
+                      <Text style={{ fontSize: 18, color: "red" }}>🗑️</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         ))}
 
@@ -268,11 +390,31 @@ export default function ExpenseTransactionsScreen() {
             marginTop: 20,
             paddingTop: 12,
             borderTopWidth: 1,
+            paddingBottom: 16,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+          <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 12 }}>
             Total: ₹ {totalAmount.toFixed(2)}
           </Text>
+
+          {/* Settlement Section */}
+          {settlements.length > 0 && (
+            <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#E5E5EA" }}>
+              <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 8 }}>
+                Settlement
+              </Text>
+              {settlements.map((settlement, idx) => (
+                <View key={idx} style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+                  <Text style={{ fontSize: 14, color: "#333" }}>
+                    • {settlement.from} owes {settlement.to}{" "}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: "#34C759", fontWeight: "600" }}>
+                    ₹{settlement.amount.toFixed(2)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
 
