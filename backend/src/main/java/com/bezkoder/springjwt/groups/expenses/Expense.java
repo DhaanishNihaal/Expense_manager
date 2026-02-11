@@ -23,7 +23,6 @@ public class Expense {
     private String description;
 
     // Total amount of the expense
-    @Column(nullable = false)
     private Double totalAmount;
 
     // Which group this expense belongs to

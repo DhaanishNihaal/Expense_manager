@@ -1,11 +1,11 @@
 package com.bezkoder.springjwt.groups.expenses.dto;
 
-import java.util.List;
 
 public class CreateExpenseRequest {
 
+    private String title;
     private String description;
-    private List<ExpenseTransactionResponse> transactions;
+    private Double totalAmount;
 
     public String getDescription() {
         return description;
@@ -15,11 +15,19 @@ public class CreateExpenseRequest {
         this.description = description;
     }
 
-    public List<ExpenseTransactionResponse> getTransactions() {
-        return transactions;
+    public String getTitle(){
+        return title;
     }
 
-    public void setTransactions(List<ExpenseTransactionResponse> transactions) {
-        this.transactions = transactions;
+    public void setTitle(String title){
+        this.title = title;
+    }
+
+    public Double getTotalAmount() {
+        return totalAmount;
+    }
+
+    public void setTotalAmount(Double totalAmount) {
+        this.totalAmount = totalAmount;
     }
 }

@@ -55,35 +55,15 @@ public class ExpenseService {
         // 4️⃣ Create Expense
         Expense expense = new Expense();
         expense.setGroup(group);
+        expense.setTitle(request.getTitle());
         expense.setDescription(request.getDescription());
+        expense.setTotalAmount(request.getTotalAmount());
         expense.setCreatedBy(creator);
 
         Expense savedExpense = expenseRepository.save(expense);
 
         // 5️⃣ Create transactions
-        for (ExpenseTransactionResponse tx : request.getTransactions()) {
-
-            User payer = userRepository.findByUsername(tx.getPayerName())
-                    .orElseThrow(() -> new RuntimeException("Payer not found"));
-
-            User receiver = userRepository.findByUsername(tx.getReceiverName())
-                    .orElseThrow(() -> new RuntimeException("Receiver not found"));
-
-            // Validate both belong to group
-            groupMemberRepository.findByGroupIdAndUserId(groupId, payer.getId())
-                    .orElseThrow(() -> new RuntimeException("Payer not in group"));
-
-            groupMemberRepository.findByGroupIdAndUserId(groupId, receiver.getId())
-                    .orElseThrow(() -> new RuntimeException("Receiver not in group"));
-
-            ExpenseTransaction transaction = new ExpenseTransaction();
-            transaction.setExpense(savedExpense);
-            transaction.setPayer(payer);
-            transaction.setReceiver(receiver);
-            transaction.setAmount(tx.getAmount());
-
-            transactionRepository.save(transaction);
-        }
+        
     }
     @Transactional(readOnly = true)
     public List<ExpenseResponse> getExpensesByGroup(Long groupId, String username) {
