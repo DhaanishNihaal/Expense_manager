@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 
 import { fetchExpenseTransactions, addExpenseTransaction, deleteExpenseTransaction } from "@/src/api/transactionApi";
+import { fetchExpenseSettlements, Settlement } from "@/src/api/settlementApi";
 import { fetchGroupMembers } from "@/src/api/groupsApi";
 import { ExpenseTransaction } from "@/src/types/transaction";
 import { User } from "@/src/types/user";
@@ -36,9 +37,11 @@ export default function ExpenseTransactionsScreen() {
   const [excludeMe, setExcludeMe] = useState(false);
   const [amount, setAmount] = useState("");
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
 
   useEffect(() => {
     loadTransactions();
+    loadSettlements();
   }, []);
 
   const loadTransactions = async () => {
@@ -49,6 +52,18 @@ export default function ExpenseTransactionsScreen() {
       console.error("Failed to fetch transactions", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  /**
+   * Load settlements from backend
+   */
+  const loadSettlements = async () => {
+    try {
+      const res = await fetchExpenseSettlements(Number(id));
+      setSettlements(res.data);
+    } catch (err) {
+      console.error("Failed to fetch settlements", err);
     }
   };
 
@@ -177,6 +192,7 @@ export default function ExpenseTransactionsScreen() {
 
       // Refresh transactions
       loadTransactions();
+      loadSettlements();
       Alert.alert("Success", "Transaction added");
     } catch (err) {
       console.error("Failed to add transaction", err);
@@ -191,6 +207,7 @@ export default function ExpenseTransactionsScreen() {
     try {
       await deleteExpenseTransaction(Number(id), transactionId);
       loadTransactions();
+      loadSettlements();
     } catch (err) {
       console.error("Failed to delete transaction", err);
       Alert.alert("Error", "Failed to delete transaction");
@@ -235,54 +252,7 @@ export default function ExpenseTransactionsScreen() {
 
   const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
 
-  /**
-   * Calculate net balances per user
-   */
-  const balances: Record<string, number> = {};
-
-  transactions.forEach((tx) => {
-    const payer = tx.payerName;
-    const receiver = tx.receiverName;
-    const amount = tx.amount;
-
-    balances[payer] = (balances[payer] || 0) + amount;
-    balances[receiver] = (balances[receiver] || 0) - amount;
-  });
-
-  /**
-   * Separate creditors and debtors
-   */
-  const creditors: Array<{ user: string; amount: number }> = [];
-  const debtors: Array<{ user: string; amount: number }> = [];
-
-  Object.entries(balances).forEach(([user, balance]) => {
-    if (balance > 0) creditors.push({ user, amount: balance });
-    if (balance < 0) debtors.push({ user, amount: -balance });
-  });
-
-  /**
-   * Greedy settlement algorithm
-   */
-  const settlements: Array<{ from: string; to: string; amount: number }> = [];
-
-  let i = 0,
-    j = 0;
-
-  while (i < debtors.length && j < creditors.length) {
-    const payAmount = Math.min(debtors[i].amount, creditors[j].amount);
-
-    settlements.push({
-      from: debtors[i].user,
-      to: creditors[j].user,
-      amount: payAmount,
-    });
-
-    debtors[i].amount -= payAmount;
-    creditors[j].amount -= payAmount;
-
-    if (debtors[i].amount === 0) i++;
-    if (creditors[j].amount === 0) j++;
-  }
+  
 
   if (loading) {
     return (
@@ -406,7 +376,7 @@ export default function ExpenseTransactionsScreen() {
               {settlements.map((settlement, idx) => (
                 <View key={idx} style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
                   <Text style={{ fontSize: 14, color: "#333" }}>
-                    • {settlement.from} owes {settlement.to}{" "}
+                    • {settlement.fromUsername} owes {settlement.toUsername}{" "}
                   </Text>
                   <Text style={{ fontSize: 14, color: "#34C759", fontWeight: "600" }}>
                     ₹{settlement.amount.toFixed(2)}
