@@ -22,6 +22,7 @@ public interface ExpenseTransactionRepository
     List<ExpenseTransaction> findByExpenseId(Long expenseId);
 
     // Get all transactions for all expenses in a group
-    List<ExpenseTransaction> findByExpense_GroupId(Long groupId);
+    List<ExpenseTransaction> findByExpenseGroupId(Long groupId);
 
+    List<ExpenseTransaction> findByExpenseIdAndPaymentGroupId(Long expenseId, String paymentGroupId);
 }

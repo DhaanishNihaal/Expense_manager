@@ -11,6 +11,9 @@ public class ExpenseTransaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    private String paymentGroupId;
+
     // Which expense this transaction belongs to (Dinner, Taxi, etc.)
     @ManyToOne
     @JoinColumn(name = "expense_id", nullable = false)
@@ -65,5 +68,11 @@ public class ExpenseTransaction {
 
     public void setAmount(Double amount) {
         this.amount = amount;
+    }
+    public String getPaymentGroupId() {
+        return paymentGroupId;
+    }
+    public void setPaymentGroupId(String paymentGroupId) {
+        this.paymentGroupId = paymentGroupId;
     }
 }

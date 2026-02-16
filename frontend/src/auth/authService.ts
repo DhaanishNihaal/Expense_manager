@@ -21,10 +21,17 @@ export const login = async (username: string, password: string) => {
   const token = response.data.accessToken;
 
   await saveToken(token);
+  await AsyncStorage.setItem("user", JSON.stringify({
+    id: response.data.id,
+    username: response.data.username,
+    email: response.data.email,
+    roles: response.data.roles,
+  }));
 
   return response.data;
 };
 
 export const logout = async () => {
   await AsyncStorage.removeItem("token");
+  await AsyncStorage.removeItem("user");
 };

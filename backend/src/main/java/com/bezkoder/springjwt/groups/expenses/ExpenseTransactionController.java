@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/expenses/{expenseId}/transactions")
+@RequestMapping("/api/expenses/{expenseId}")
 public class ExpenseTransactionController {
 
     private final ExpenseTransactionService transactionService;
@@ -21,7 +21,7 @@ public class ExpenseTransactionController {
     // ============================
     // GET all transactions
     // ============================
-    @GetMapping
+    @GetMapping("/transactions")
     public List<ExpenseTransactionResponse> getTransactions(
             @PathVariable Long expenseId) {
 
@@ -31,7 +31,7 @@ public class ExpenseTransactionController {
     // ============================
     // ADD transaction
     // ============================
-    @PostMapping
+    @PostMapping("/transactions")
     public void addTransaction(
             @PathVariable Long expenseId,
             @RequestBody CreateTransactionRequest request,Authentication authentication) {
@@ -42,11 +42,13 @@ public class ExpenseTransactionController {
     // ============================
     // DELETE transaction
     // ============================
-    @DeleteMapping("/{transactionId}")
-    public void deleteTransaction(
+    @DeleteMapping("/payments/{paymentGroupId}")
+    public void deletePayment(
             @PathVariable Long expenseId,
-            @PathVariable Long transactionId) {
+            @PathVariable String paymentGroupId,
+            Authentication authentication) {
 
-        transactionService.deleteTransaction(expenseId, transactionId);
+        transactionService.deletePayment(expenseId,paymentGroupId,authentication.getName());
     }
+
 }

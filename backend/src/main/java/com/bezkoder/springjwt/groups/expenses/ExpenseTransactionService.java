@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 import java.util.List;
-
+import java.util.UUID;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 @Service
@@ -43,6 +43,7 @@ public class ExpenseTransactionService {
                         tx.getPayer().getName(),
                         tx.getReceiver().getId(),
                         tx.getReceiver().getName(),
+                        tx.getPaymentGroupId(),
                         tx.getAmount()
                 ))
                 .toList();
@@ -82,7 +83,7 @@ public class ExpenseTransactionService {
 
     // exact remainder
     BigDecimal remainder = total.subtract(assigned);
-
+    String paymentGroupId = UUID.randomUUID().toString();
     for (int i = 0; i < receiverCount; i++) {
 
         BigDecimal amount = base;
@@ -97,6 +98,7 @@ public class ExpenseTransactionService {
         tx.setPayer(payer);
         tx.setReceiver(userRepository.findById(request.getReceiverIds().get(i)).orElseThrow());
         tx.setAmount(amount.doubleValue()); // DB still double is fine
+        tx.setPaymentGroupId(paymentGroupId);
         transactionRepository.save(tx);
         }
     }
@@ -104,19 +106,34 @@ public class ExpenseTransactionService {
     // DELETE transaction
     // ============================
     @Transactional
-    public void deleteTransaction(
-            Long expenseId,
-            Long transactionId
-    ) {
+    public void deletePayment(Long expenseId,
+                          String paymentGroupId,
+                          String username) {
 
-        ExpenseTransaction tx = transactionRepository.findById(transactionId)
-                .orElseThrow(() -> new RuntimeException("Transaction not found"));
+    // 1️⃣ Check expense exists
+    Expense expense = expenseRepository.findById(expenseId)
+            .orElseThrow(() -> new RuntimeException("Expense not found"));
 
-        // Safety check: ensure transaction belongs to the expense
-        if (!tx.getExpense().getId().equals(expenseId)) {
-            throw new RuntimeException("Transaction does not belong to this expense");
-        }
+    // 2️⃣ Permission check (only creator can delete)
+    
+    // 3️⃣ Check payment exists
+    List<ExpenseTransaction> transactions =
+    transactionRepository.findByExpenseIdAndPaymentGroupId(
+        expenseId,
+        paymentGroupId
+    );
+    
+    User payer=transactions.get(0).getPayer();
+    User currentUser = userRepository.findByUsername(username)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+    if (!payer.getId().equals(currentUser.getId())) {
+        throw new RuntimeException("Only expense creator can delete payment");
+    }
+    if (transactions.isEmpty()) {
+        throw new RuntimeException("Payment not found");
+    }
 
-        transactionRepository.delete(tx);
+    // 4️⃣ Delete all splits in this payment group
+    transactionRepository.deleteAll(transactions);
     }
 }

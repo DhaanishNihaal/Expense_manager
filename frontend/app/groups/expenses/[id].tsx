@@ -14,11 +14,12 @@ import { Picker } from "@react-native-picker/picker";
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 
-import { fetchExpenseTransactions, addExpenseTransaction, deleteExpenseTransaction } from "@/src/api/transactionApi";
+import { fetchExpenseTransactions, addExpenseTransaction ,deletePayment} from "@/src/api/transactionApi";
 import { fetchExpenseSettlements, Settlement } from "@/src/api/settlementApi";
 import { fetchGroupMembers } from "@/src/api/groupsApi";
 import { ExpenseTransaction } from "@/src/types/transaction";
 import { User } from "@/src/types/user";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ExpenseTransactionsScreen() {
   const { id, groupId } = useLocalSearchParams();
@@ -26,7 +27,9 @@ export default function ExpenseTransactionsScreen() {
   // Transaction state
   const [transactions, setTransactions] = useState<ExpenseTransaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedPayers, setExpandedPayers] = useState<Set<number>>(new Set());
+  const [expandedPayers, setExpandedPayers] = useState<Set<string>>(new Set());
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Modal state
   const [showAddModal, setShowAddModal] = useState(false);
@@ -40,9 +43,26 @@ export default function ExpenseTransactionsScreen() {
   const [settlements, setSettlements] = useState<Settlement[]>([]);
 
   useEffect(() => {
+    getCurrentUserId();
     loadTransactions();
     loadSettlements();
   }, []);
+
+  const getCurrentUserId = async () => {
+    try {
+      const userDataStr = await AsyncStorage.getItem("user");
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        const userId = Number(userData.id); // Ensure it's a number
+        console.log("Current User ID:", userId);
+        setCurrentUserId(userId);
+      } else {
+        console.log("No user data found in AsyncStorage");
+      }
+    } catch (err) {
+      console.error("Failed to get current user ID", err);
+    }
+  };
 
   const loadTransactions = async () => {
     try {
@@ -200,29 +220,17 @@ export default function ExpenseTransactionsScreen() {
     }
   };
 
-  /**
-   * Handle delete transaction
-   */
-  const handleDeleteTransaction = async (transactionId: number) => {
-    try {
-      await deleteExpenseTransaction(Number(id), transactionId);
-      loadTransactions();
-      loadSettlements();
-    } catch (err) {
-      console.error("Failed to delete transaction", err);
-      Alert.alert("Error", "Failed to delete transaction");
-    }
-  };
+
 
   /**
    * Toggle payer expansion
    */
-  const toggle = (payerId: number) => {
+  const toggle = (paymentGroupId: string) => {
     const newExpanded = new Set(expandedPayers);
-    if (newExpanded.has(payerId)) {
-      newExpanded.delete(payerId);
+    if (newExpanded.has(paymentGroupId)) {
+      newExpanded.delete(paymentGroupId);
     } else {
-      newExpanded.add(payerId);
+      newExpanded.add(paymentGroupId);
     }
     setExpandedPayers(newExpanded);
   };
@@ -230,11 +238,12 @@ export default function ExpenseTransactionsScreen() {
   /**
    * Group transactions by payer
    */
-  const groupedByPayer = transactions.reduce((acc, tx) => {
-    const key = tx.payerId;
+  const groupedByPaymentId = transactions.reduce((acc, tx) => {
+    const key = tx.paymentGroupId;
 
     if (!acc[key]) {
       acc[key] = {
+        paymentGroupId: key,
         payerId: tx.payerId,
         payerName: tx.payerName,
         total: 0,
@@ -246,9 +255,20 @@ export default function ExpenseTransactionsScreen() {
     acc[key].splits.push(tx);
 
     return acc;
-  }, {} as Record<number, any>);
+  }, {} as Record<string, any>);
 
-  const payerSummaries = Object.values(groupedByPayer);
+  const handleDeletePayment = async (paymentGroupId: string) => {
+    try{
+      await deletePayment(Number(id), paymentGroupId);
+      Alert.alert("Success", "Payment deleted");
+      loadTransactions();
+      loadSettlements();
+    }
+    catch(err){
+      console.log("delete failed",err);
+    }
+  };
+  const payerSummaries = Object.values(groupedByPaymentId);
 
   const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
 
@@ -271,36 +291,95 @@ export default function ExpenseTransactionsScreen() {
 
         {/* Payer Summary List */}
         {payerSummaries.map((payer) => (
-          <View key={payer.payerId} style={{ marginBottom: 12 }}>
+          <View key={payer.paymentGroupId} style={{ marginBottom: 12 }}>
             {/* Summary Row - Tap to expand */}
-            <TouchableOpacity 
-              onPress={() => toggle(payer.payerId)}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: 14,
-                backgroundColor: "#fff",
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: "#E5E5EA",
-              }}
-            >
-              <Text style={{ fontSize: 16, fontWeight: "600", color: "#333" }}>
-                {payer.payerName} paid
-              </Text>
-              <View style={{ alignItems: "flex-end" }}>
-                <Text style={{ fontSize: 18, fontWeight: "bold", color: "#333" }}>
-                  ₹{payer.total.toFixed(2)}
+            <View style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: 14,
+              backgroundColor: "#fff",
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: "#E5E5EA",
+            }}>
+              <TouchableOpacity 
+                onPress={() => toggle(payer.paymentGroupId)}
+                style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "600", color: "#333" }}>
+                  {payer.payerName} paid
                 </Text>
-                <Text style={{ fontSize: 12, color: "#666" }}>
-                  {expandedPayers.has(payer.payerId) ? "▼" : "▶"}
-                </Text>
-              </View>
-            </TouchableOpacity>
+                <View style={{ alignItems: "flex-end", marginRight: 8 }}>
+                  <Text style={{ fontSize: 18, fontWeight: "bold", color: "#333" }}>
+                    ₹{payer.total.toFixed(2)}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#666" }}>
+                    {expandedPayers.has(payer.paymentGroupId) ? "▼" : "▶"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Three-dot menu on payer summary - only show if current user is payer */}
+              {(
+                <View style={{ position: "relative" }}>
+                  <TouchableOpacity
+                    onPress={() => setOpenMenuId(openMenuId === payer.paymentGroupId ? null : payer.paymentGroupId)}
+                    style={{ padding: 8, marginRight: -8 }}
+                  >
+                    <Text style={{ fontSize: 18 }}>⋯</Text>
+                  </TouchableOpacity>
+
+                  {/* Delete Menu Option */}
+                  {openMenuId === payer.paymentGroupId && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: 30,
+                        backgroundColor: "#fff",
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: "#E5E5EA",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 4,
+                        elevation: 3,
+                        zIndex: 100,
+                      }}
+                    >
+                      <TouchableOpacity
+                        onPress={() => {
+                          setOpenMenuId(null);
+                          if (Platform.OS === "web") {
+                            const ok = window.confirm("Delete this transaction?");
+                            if (ok) handleDeletePayment(payer.paymentGroupId);
+                          } else {
+                            Alert.alert("Delete transaction?", "This action cannot be undone", [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Delete",
+                                style: "destructive",
+                                onPress: () => {
+                                  handleDeletePayment(payer.paymentGroupId);
+                                },
+                              },
+                            ]);
+                          }
+                        }}
+                        style={{ paddingVertical: 10, paddingHorizontal: 16 }}
+                      >
+                        <Text style={{ color: "red", fontSize: 14, fontWeight: "500" }}>Delete</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
 
             {/* Expanded Splits */}
-            {expandedPayers.has(payer.payerId) && (
+            {expandedPayers.has(payer.paymentGroupId) && (
               <View style={{ backgroundColor: "#f2f2f2", borderRadius: 8, borderTopLeftRadius: 0, borderTopRightRadius: 0, paddingVertical: 8 }}>
                 {payer.splits.map((split: ExpenseTransaction) => (
                   <View 
@@ -323,30 +402,6 @@ export default function ExpenseTransactionsScreen() {
                         ₹{split.amount.toFixed(2)}
                       </Text>
                     </View>
-
-                    {/* Delete Button */}
-                    <TouchableOpacity
-                      onPress={() => {
-                        if (Platform.OS === "web") {
-                          const ok = window.confirm("Delete this transaction?");
-                          if (ok) handleDeleteTransaction(split.transactionId);
-                        } else {
-                          Alert.alert("Delete transaction?", "This action cannot be undone", [
-                            { text: "Cancel", style: "cancel" },
-                            {
-                              text: "Delete",
-                              style: "destructive",
-                              onPress: () => {
-                                handleDeleteTransaction(split.transactionId);
-                              },
-                            },
-                          ]);
-                        }
-                      }}
-                      style={{ marginLeft: 10 }}
-                    >
-                      <Text style={{ fontSize: 18, color: "red" }}>🗑️</Text>
-                    </TouchableOpacity>
                   </View>
                 ))}
               </View>

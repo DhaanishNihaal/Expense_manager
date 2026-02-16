@@ -18,5 +18,6 @@ export const fetchExpenseTransactions= (expenseId: number) => {
 export const addExpenseTransaction = (expenseId: number, data: any) =>
   api.post(`/api/expenses/${expenseId}/transactions`, data);
 
-export const deleteExpenseTransaction = (expenseId: number, transactionId: number) =>
-  api.delete(`/api/expenses/${expenseId}/transactions/${transactionId}`);
+export const deletePayment = (expenseId: number, paymentGroupId: string) =>{
+  return api.delete(`/api/expenses/${expenseId}/payments/${paymentGroupId}`);
+}

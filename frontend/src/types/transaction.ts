@@ -4,5 +4,7 @@ export type ExpenseTransaction = {
   payerName: string;
   receiverId: number;
   receiverName: string;
+  paymentGroupId: string;
   amount: number;
+
 };

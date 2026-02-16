@@ -9,6 +9,7 @@ public class ExpenseTransactionResponse {
 
     private Long receiverId;
     private String receiverName;
+    private String paymentGroupId;
 
     private Double amount;
 
@@ -18,11 +19,13 @@ public class ExpenseTransactionResponse {
             String payerName,
             Long receiverId,
             String receiverName,
+            String paymentGroupId,
             Double amount
     ) {
         this.transactionId = transactionId;
         this.payerId = payerId;
         this.payerName = payerName;
+        this.paymentGroupId = paymentGroupId;
         this.receiverId = receiverId;
         this.receiverName = receiverName;
         this.amount = amount;
@@ -50,5 +53,8 @@ public class ExpenseTransactionResponse {
 
     public Double getAmount() {
         return amount;
+    }
+    public String getPaymentGroupId() {
+        return paymentGroupId;
     }
 }
