@@ -1,14 +1,13 @@
 package com.bezkoder.springjwt.groups.balances;
-
+import com.bezkoder.springjwt.groups.balances.dto.BalanceResponse;
 import com.bezkoder.springjwt.groups.expenses.ExpenseTransaction;
 import com.bezkoder.springjwt.groups.expenses.ExpenseTransactionRepository;
-import com.bezkoder.springjwt.groups.balances.dto.BalanceResponse;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.List;
 
 @Service
-public class BalanceService{
+public class BalanceService {
 
     private final ExpenseTransactionRepository transactionRepository;
 
@@ -16,44 +15,30 @@ public class BalanceService{
         this.transactionRepository = transactionRepository;
     }
 
-    public List<BalanceResponse> calculateBalances(Long groupId) {
+    // 🔹 Group-level
+    public List<BalanceResponse> getGroupBalances(Long groupId) {
 
         List<ExpenseTransaction> transactions =
-                transactionRepository.findAllByGroupId(groupId);
+                transactionRepository.findByExpense_GroupId(groupId);
 
-        // Key = "fromUserId_toUserId"
-        Map<String, Double> balanceMap = new HashMap<>();
+        return SettlementEngine.settle(transactions);
+    }
 
-        for (ExpenseTransaction tx : transactions) {
+    // 🔹 Expense-level
+    public List<BalanceResponse> getExpenseBalances(Long expenseId) {
 
-            Long fromId = tx.getReceiver().getId();
-            Long toId   = tx.getPayer().getId();
+        List<ExpenseTransaction> transactions =
+                transactionRepository.findByExpenseId(expenseId);
 
-            // Ignore self-payments
-            if (fromId.equals(toId)) continue;
+        return SettlementEngine.settle(transactions);
+    }
 
-            String key = fromId + "_" + toId;
+    // 🔹 Global (optional)
+    public List<BalanceResponse> getGlobalBalances() {
 
-            balanceMap.put(
-                    key,
-                    balanceMap.getOrDefault(key, 0.0) + tx.getAmount()
-            );
-        }
+        List<ExpenseTransaction> transactions =
+                transactionRepository.findAll();
 
-        // Convert map → response list
-        List<BalanceResponse> result = new ArrayList<>();
-
-        for (Map.Entry<String, Double> entry : balanceMap.entrySet()) {
-
-            String[] parts = entry.getKey().split("_");
-            Long fromId = Long.parseLong(parts[0]);
-            Long toId   = Long.parseLong(parts[1]);
-
-            result.add(
-                new BalanceResponse(fromId, toId, entry.getValue())
-            );
-        }
-
-        return result;
+        return SettlementEngine.settle(transactions);
     }
 }

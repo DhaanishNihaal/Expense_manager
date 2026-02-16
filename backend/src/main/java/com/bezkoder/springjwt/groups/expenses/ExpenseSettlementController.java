@@ -1,6 +1,6 @@
 package com.bezkoder.springjwt.groups.expenses;
 
-import com.bezkoder.springjwt.groups.expenses.dto.SettlementResponse;
+import com.bezkoder.springjwt.groups.balances.dto.BalanceResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,7 +16,7 @@ public class ExpenseSettlementController{
     }
 
     @GetMapping
-    public List<SettlementResponse> getExpenseSettlements(
+    public List<BalanceResponse> getExpenseSettlements(
             @PathVariable Long expenseId) {
 
         return settlementService.getExpenseSettlements(expenseId);

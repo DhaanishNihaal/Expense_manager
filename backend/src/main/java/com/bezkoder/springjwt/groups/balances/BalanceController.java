@@ -21,6 +21,6 @@ public class BalanceController {
                                              Authentication authentication) {
 
         // Authentication is already enforced by Spring Security
-        return balanceService.calculateBalances(groupId);
+        return balanceService.getGroupBalances(groupId);
     }
 }

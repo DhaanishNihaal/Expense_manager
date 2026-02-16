@@ -321,7 +321,7 @@ export default function ExpenseTransactionsScreen() {
               </TouchableOpacity>
 
               {/* Three-dot menu on payer summary - only show if current user is payer */}
-              {(
+              {currentUserId==payer.payerId && (
                 <View style={{ position: "relative" }}>
                   <TouchableOpacity
                     onPress={() => setOpenMenuId(openMenuId === payer.paymentGroupId ? null : payer.paymentGroupId)}
