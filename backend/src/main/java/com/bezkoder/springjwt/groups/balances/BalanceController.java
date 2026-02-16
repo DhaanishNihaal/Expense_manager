@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/groups/{groupId}/balances")
+@RequestMapping("/api")
 public class BalanceController {
 
     private final BalanceService balanceService;
@@ -16,11 +16,22 @@ public class BalanceController {
         this.balanceService = balanceService;
     }
 
-    @GetMapping
+    @GetMapping("/groups/{groupId}/settlements")
     public List<BalanceResponse> getBalances(@PathVariable Long groupId,
                                              Authentication authentication) {
 
         // Authentication is already enforced by Spring Security
         return balanceService.getGroupBalances(groupId);
+    }
+    @GetMapping("/expenses/{expenseId}/settlements")
+    public List<BalanceResponse> getExpenseBalances(@PathVariable Long expenseId) {
+
+        return balanceService.getExpenseBalances(expenseId);
+    }
+    @GetMapping("/users/me/settlements")
+    public List<BalanceResponse> getUserBalances(Authentication authentication) {
+
+        String username = authentication.getName();
+        return balanceService.getUserBalances(username);
     }
 }

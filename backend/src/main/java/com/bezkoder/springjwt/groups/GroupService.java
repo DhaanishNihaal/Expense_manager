@@ -125,7 +125,8 @@ public class GroupService {
                 .stream()
                 .map(m -> new MemberResponse(
                     m.getUser().getId(),
-                    m.getUser().getName()
+                    m.getUser().getName(),
+                    m.getRole()
                 ))
                 .toList();
 

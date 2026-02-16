@@ -8,4 +8,6 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     // Get all expenses for a group
     List<Expense> findByGroupId(Long groupId);
+
+    
 }

@@ -2,7 +2,8 @@ export interface Expense {
     id: number;
     title: string;
     totalAmount: number;
-    createdBy: string;
+    createdById: number;
+    createdByUserName: string;
     createdAt: string;
     description: string;
 }   

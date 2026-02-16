@@ -1,15 +1,19 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert } from "react-native";
-import { useEffect, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, Platform } from "react-native";
+import { use, useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
-import { fetchExpensesByGroup, addExpense } from "../../src/api/expenseApi";
+import { fetchExpensesByGroup, addExpense, deleteExpense } from "../../src/api/expenseApi";
+import { fetchGroupSettlements, Settlement } from "../../src/api/settlementApi";
 import { Expense } from "../../src/types/expense";
 import { router } from "expo-router";
 import api from "../../src/api/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Member = {
   id: number;
   name: string;
+  role: string;
 };
+
 
 type GroupDetail = {
   id: number;
@@ -24,24 +28,76 @@ export default function GroupDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loadingExpenses, setLoadingExpenses] = useState(true);
+  const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [loadingSettlements, setLoadingSettlements] = useState(true);
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [isGroupAdmin, setIsGroupAdmin] = useState(false);
   const [newDescription, setNewDescription] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   useEffect(() => {
-    fetchGroup();
+    getCurrentUser();
     fetchExpensesByGroup(Number(id)).then(setExpenses).finally(() => setLoadingExpenses(false));
+    loadSettlements();
   }, [id]);
+  useEffect(() => {
+    if (id && currentUserId) {
+      fetchGroup();
+    }
+  }, [id,currentUserId]);
 
-  const fetchGroup = async () => {
+  const getCurrentUser = async () => {
     try {
-      const res = await api.get(`/api/groups/${id}`);
-      setGroup(res.data);
+      const userDataStr = await AsyncStorage.getItem("user");
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        setCurrentUserId(Number(userData.id));
+        setCurrentUsername(userData.name || userData.username);
+        console.log("Current user:", userData);
+      }
     } catch (err) {
-      console.log("Failed to load group", err);
-    } finally {
-      setLoading(false);
+      console.error("Failed to get current user", err);
     }
   };
+  
+  
+
+  const loadSettlements = async () => {
+    try {
+      const res = await fetchGroupSettlements(Number(id));
+      setSettlements(res.data);
+    } catch (err) {
+      console.error("Failed to fetch settlements", err);
+    } finally {
+      setLoadingSettlements(false);
+    }
+  };
+
+  const fetchGroup = async () => {
+  try {
+    const res = await api.get(`/api/groups/${id}`);
+    setGroup(res.data);
+    console.log("Group data:", res.data);
+    if (currentUserId !== null && res.data.members?.length) {
+      const currentMember = res.data.members.find(
+        (m: Member) => m.id === currentUserId
+      );
+
+      const isAdmin = currentMember?.role === "ADMIN";
+      setIsGroupAdmin(isAdmin);
+
+      console.log("Current user role:", currentMember?.role);
+      console.log("Is admin:", isAdmin);
+    }
+
+  } catch (err) {
+    console.log("Failed to load group", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (loading) {
     return <Text>Loading...</Text>;
@@ -74,37 +130,145 @@ export default function GroupDetailsScreen() {
     }
   };
 
+  const handleDeleteExpense = async (expenseId: number) => {
+    try {
+      await deleteExpense(Number(id), expenseId);
+      Alert.alert("Success", "Expense deleted");
+      fetchExpensesByGroup(Number(id)).then(setExpenses);
+      loadSettlements();
+    } catch (err) {
+      console.error("Delete failed", err);
+      Alert.alert("Error", "Failed to delete expense");
+    }
+  };
+
+  const isExpenseCreator = (expenseCreatorId: number) => {
+    console.log("Current username:", currentUsername,expenseCreatorId);
+    return currentUserId === expenseCreatorId;
+
+  };
+
+  const canDeleteExpense = (expense: Expense) => {
+    console.log(expense.createdById);
+    return isGroupAdmin || isExpenseCreator(expense.createdById);
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{group.name}</Text>
       <Text style={styles.subtitle}>{group.members.length} members</Text>
 
       <Text style={styles.section}>Members</Text>
-      {group.members.map((m) => (
-        <Text key={m.id} style={styles.member}>
-          • {m.name}
-        </Text>
-      ))}
+      {group.members.map((m) => {
+          
+          return (
+            <Text key={m.id} style={styles.member}>
+              • {m.name}
+              {isGroupAdmin && <Text> (Admin)</Text>}
+            </Text>
+          );
+        })}
+
+
+      {/* Settlement Section */}
+      {settlements.length > 0 && (
+        <View style={{ marginTop: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#E5E5EA" }}>
+          <Text style={{ fontWeight: "bold", fontSize: 16, marginBottom: 8 }}>
+            Settlements
+          </Text>
+          {settlements.map((settlement, idx) => (
+            <View key={idx} style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+              <Text style={{ fontSize: 14, color: "#333" }}>
+                • {settlement.fromname} owes {settlement.toname}{" "}
+              </Text>
+              <Text style={{ fontSize: 14, color: "#34C759", fontWeight: "600" }}>
+                ₹{settlement.amount.toFixed(2)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+
       <Text style={styles.sectionTitle}>Expenses</Text>
 
       {expenses.map(exp => (
-        <TouchableOpacity
-          key={exp.id}
-          style={styles.expenseCard}
-          onPress={() => {
-            router.push(`/groups/expenses/${exp.id}?groupId=${id}`);
-          }}
-        >
-          <Text style={styles.expenseTitle}>{exp.title}</Text>
+        <View key={exp.id} style={{ position: "relative", marginBottom: 10 }}>
+          <TouchableOpacity
+            style={styles.expenseCard}
+            onPress={() => {
+              router.push(`/groups/expenses/${exp.id}?groupId=${id}`);
+            }}
+          >
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.expenseTitle}>{exp.title}</Text>
 
-          {exp.description && (
-            <Text style={styles.expenseDescription}>
-              {exp.description}
-            </Text>
-          )}
+                {exp.description && (
+                  <Text style={styles.expenseDescription}>
+                    {exp.description}
+                  </Text>
+                )}
 
-          <Text>Paid by {exp.createdBy}</Text>
-        </TouchableOpacity>
+                <Text>Paid by {exp.createdByUserName}</Text>
+              </View>
+
+              {canDeleteExpense(exp) && (
+                <View style={{ position: "relative" }}>
+                  <TouchableOpacity
+                    onPress={() => setOpenMenuId(openMenuId === exp.id ? null : exp.id)}
+                    style={{ padding: 8, marginRight: -8 }}
+                  >
+                    <Text style={{ fontSize: 18 }}>⋯</Text>
+                  </TouchableOpacity>
+
+                  {openMenuId === exp.id && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: 30,
+                        backgroundColor: "#fff",
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: "#E5E5EA",
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 2 },
+                        shadowOpacity: 0.1,
+                        shadowRadius: 4,
+                        elevation: 3,
+                        zIndex: 100,
+                      }}
+                    >
+                      <TouchableOpacity
+                        onPress={() => {
+                          setOpenMenuId(null);
+                          if (Platform.OS === "web") {
+                            const ok = window.confirm("Delete this expense?");
+                            if (ok) handleDeleteExpense(exp.id);
+                          } else {
+                            Alert.alert("Delete expense?", "This action cannot be undone", [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Delete",
+                                style: "destructive",
+                                onPress: () => {
+                                  handleDeleteExpense(exp.id);
+                                },
+                              },
+                            ]);
+                          }
+                        }}
+                        style={{ paddingVertical: 10, paddingHorizontal: 16 }}
+                      >
+                        <Text style={{ color: "red", fontSize: 14, fontWeight: "500" }}>Delete</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        </View>
       ))}
 
       {/* Add Expense Button */}
@@ -273,5 +437,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
     fontSize: 16,
+  },
+  adminBadge: {
+    color: "#007AFF",
+    fontWeight: "600",
+    fontSize: 12,
   },
 });

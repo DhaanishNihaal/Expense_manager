@@ -31,4 +31,12 @@ public class ExpenseController {
         String username = authentication.getName();
         return expenseService.getExpensesByGroup(groupId, username);
     }
+    @DeleteMapping("/{expenseId}")
+    public void deleteExpense(@PathVariable Long groupId,
+                              @PathVariable Long expenseId,
+                              Authentication authentication) {
+
+        String username = authentication.getName();
+        expenseService.deleteExpense(groupId, expenseId, username);
+    }
 }

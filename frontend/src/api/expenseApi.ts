@@ -15,4 +15,8 @@ export const addExpense = async (
   data: { title: string; description?: string; totalAmount: number }
 ) => {
   return await api.post(`/api/groups/${groupId}/expenses`, data);
-};  
+};
+
+export const deleteExpense = async (groupId: number, expenseId: number) => {
+  return await api.delete(`/api/groups/${groupId}/expenses/${expenseId}`);
+};

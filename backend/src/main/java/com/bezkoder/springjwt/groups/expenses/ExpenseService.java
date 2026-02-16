@@ -6,6 +6,7 @@ import com.bezkoder.springjwt.groups.GroupRepository;
 import com.bezkoder.springjwt.groups.expenses.dto.CreateExpenseRequest;
 import com.bezkoder.springjwt.groups.expenses.dto.ExpenseTransactionResponse;
 import com.bezkoder.springjwt.models.User;
+import com.bezkoder.springjwt.groups.GroupMember;
 import com.bezkoder.springjwt.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,6 +93,7 @@ public class ExpenseService {
                 response.setDescription(expense.getDescription());
                 response.setTotalAmount(expense.getTotalAmount());
                 response.setCreatedAt(expense.getCreatedAt());
+                response.setCreatedById(expense.getCreatedBy().getId());
                 response.setCreatedByUsername(
                         expense.getCreatedBy().getUsername()
                 );
@@ -100,5 +102,33 @@ public class ExpenseService {
             })
             .toList();
     }
+    public void deleteExpense(Long groupId, Long expenseId, String username) {
 
+        // 1️⃣ Get logged-in user
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // 2️⃣ Verify user belongs to the group
+        boolean isMember = groupMemberRepository
+                .existsByGroupIdAndUserId(groupId, user.getId());
+        String userRole = groupMemberRepository
+                .findByGroupIdAndUserId(groupId, user.getId())
+                .map(GroupMember::getRole)
+                .orElseThrow(() -> new RuntimeException("User is not a member of this group"));
+
+        if (!isMember) {
+            throw new RuntimeException("User is not a member of this group");
+        }
+
+        // 3️⃣ Fetch expense and verify it belongs to the group
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new RuntimeException("Expense not found"));
+        if (!expense.getGroup().getId().equals(groupId)) {
+            throw new RuntimeException("Expense does not belong to this group");
+        }
+        if(!expense.getCreatedBy().getUsername().equals(username) && !userRole.equals("ADMIN")) {
+            throw new RuntimeException("Only the creator can delete this expense");
+        }
+        expenseRepository.delete(expense);
+        }
 }

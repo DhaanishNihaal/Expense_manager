@@ -431,7 +431,7 @@ export default function ExpenseTransactionsScreen() {
               {settlements.map((settlement, idx) => (
                 <View key={idx} style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
                   <Text style={{ fontSize: 14, color: "#333" }}>
-                    • {settlement.fromUsername} owes {settlement.toUsername}{" "}
+                    • {settlement.fromname} owes {settlement.toname}{" "}
                   </Text>
                   <Text style={{ fontSize: 14, color: "#34C759", fontWeight: "600" }}>
                     ₹{settlement.amount.toFixed(2)}

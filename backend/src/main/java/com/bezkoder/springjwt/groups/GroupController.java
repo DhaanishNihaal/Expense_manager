@@ -48,4 +48,6 @@ public class GroupController {
 
         return groupService.getGroupDetails(groupId, authentication.getName());
     }
+    
+
 }

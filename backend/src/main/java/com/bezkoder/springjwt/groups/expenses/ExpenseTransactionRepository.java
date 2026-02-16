@@ -29,4 +29,6 @@ public interface ExpenseTransactionRepository
     List<ExpenseTransaction> findByExpense_GroupId(Long groupId);
 
     List<ExpenseTransaction> findAll();
+
+    List<ExpenseTransaction> findByPayerUsernameOrReceiverUsername(String payerUsername, String receiverUsername);
 }

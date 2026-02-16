@@ -41,4 +41,13 @@ public class BalanceService {
 
         return SettlementEngine.settle(transactions);
     }
+    
+    public List<BalanceResponse> getUserBalances(String username) {
+
+        List<ExpenseTransaction> transactions =
+                transactionRepository.findByPayerUsernameOrReceiverUsername(username, username);
+
+        return SettlementEngine.settle(transactions);
+    }
+    
 }
