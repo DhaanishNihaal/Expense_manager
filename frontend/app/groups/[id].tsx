@@ -164,7 +164,9 @@ export default function GroupDetailsScreen() {
           return (
             <Text key={m.id} style={styles.member}>
               • {m.name}
-              {isGroupAdmin && <Text> (Admin)</Text>}
+              {m.role=="ADMIN" && (
+                <Text style={styles.adminBadge}> ADMIN</Text>
+              )}
             </Text>
           );
         })}

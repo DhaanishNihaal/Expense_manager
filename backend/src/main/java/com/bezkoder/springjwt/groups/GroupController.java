@@ -26,16 +26,16 @@ public class GroupController {
         String username = authentication.getName();
         return groupService.createGroup(request, username);
     }
-    @PostMapping("/{groupId}/members")
-    public String addMember(@PathVariable Long groupId,
-                        @RequestBody AddGroupMemberRequest request,
-                        Authentication authentication) {
+    // @PostMapping("/{groupId}/members")
+    // public String addMember(@PathVariable Long groupId,
+    //                     @RequestBody AddGroupMemberRequest request,
+    //                     Authentication authentication) {
 
-        String adminUsername = authentication.getName();
-        groupService.addMember(groupId, adminUsername, request.getUsername());
+    //     String adminUsername = authentication.getName();
+    //     groupService.addMember(groupId, adminUsername, request.getUsername());
 
-        return "Member added successfully";
-    }
+    //     return "Member added successfully";
+    // }
     @GetMapping
     public List<GroupResponse> getMyGroups(Authentication authentication) {
 
