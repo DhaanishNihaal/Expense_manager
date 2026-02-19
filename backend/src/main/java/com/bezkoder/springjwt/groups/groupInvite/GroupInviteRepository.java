@@ -10,6 +10,8 @@ public interface GroupInviteRepository extends JpaRepository<GroupInvite, Long> 
 
     List<GroupInvite> findByInvitedUserAndStatus(User user, String status);
 
+    List<GroupInvite> findByGroupId(Long groupId);
+
     Optional<GroupInvite> findByGroupIdAndInvitedUserIdAndStatus(
             Long groupId, Long userId, String status
     );

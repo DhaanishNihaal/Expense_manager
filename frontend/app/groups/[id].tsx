@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, Platform } from "react-native";
-import { use, useEffect, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, Platform, ActivityIndicator, ScrollView } from "react-native";
+import { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { fetchExpensesByGroup, addExpense, deleteExpense } from "../../src/api/expenseApi";
 import { fetchGroupSettlements, Settlement } from "../../src/api/settlementApi";
@@ -22,6 +22,12 @@ type GroupDetail = {
   members: Member[];
 };
 
+type UserSearch = {
+  id: number;
+  username: string;
+  name: string;
+};
+
 export default function GroupDetailsScreen() {
   const { id } = useLocalSearchParams();
   const [group, setGroup] = useState<GroupDetail | null>(null);
@@ -37,6 +43,13 @@ export default function GroupDetailsScreen() {
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [currentUsername, setCurrentUsername] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [invites, setInvites] = useState<{ invitedUserId: number; status: string }[]>([]);
+  const [sendingInvite, setSendingInvite] = useState<number | null>(null);
   useEffect(() => {
     getCurrentUser();
     fetchExpensesByGroup(Number(id)).then(setExpenses).finally(() => setLoadingExpenses(false));
@@ -46,7 +59,7 @@ export default function GroupDetailsScreen() {
     if (id && currentUserId) {
       fetchGroup();
     }
-  }, [id,currentUserId]);
+  }, [id, currentUserId]);
 
   const getCurrentUser = async () => {
     try {
@@ -55,14 +68,67 @@ export default function GroupDetailsScreen() {
         const userData = JSON.parse(userDataStr);
         setCurrentUserId(Number(userData.id));
         setCurrentUsername(userData.name || userData.username);
-        console.log("Current user:", userData);
       }
     } catch (err) {
       console.error("Failed to get current user", err);
     }
   };
-  
-  
+
+  const loadInvites = async () => {
+    try {
+      const res = await api.get(`/api/groups/${id}/invites`);
+      setInvites(res.data);
+    } catch (err) {
+      console.error("Failed to load invites", err);
+    }
+  };
+
+  const sendInvite = async (username: string, userId: number) => {
+    setSendingInvite(userId);
+    try {
+      await api.post(`/api/groups/${id}/invite`, { username });
+      await loadInvites();
+    } catch (err) {
+      console.error("Failed to send invite", err);
+      Alert.alert("Error", "Failed to send invite");
+    } finally {
+      setSendingInvite(null);
+    }
+  };
+
+  const searchUsers = async (keyword: string, groupId: number) => {
+    if (!keyword.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      const res = await api.get(`/api/users/search?keyword=${encodeURIComponent(keyword)}&groupId=${encodeURIComponent(groupId)}`);
+      setSearchResults(res.data);
+    } catch (err) {
+      console.error("User search failed", err);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!memberSearch.trim()) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    debounceRef.current = setTimeout(() => {
+      searchUsers(memberSearch, Number(id));
+
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [memberSearch]);
 
   const loadSettlements = async () => {
     try {
@@ -76,28 +142,25 @@ export default function GroupDetailsScreen() {
   };
 
   const fetchGroup = async () => {
-  try {
-    const res = await api.get(`/api/groups/${id}`);
-    setGroup(res.data);
-    console.log("Group data:", res.data);
-    if (currentUserId !== null && res.data.members?.length) {
-      const currentMember = res.data.members.find(
-        (m: Member) => m.id === currentUserId
-      );
+    try {
+      const res = await api.get(`/api/groups/${id}`);
+      setGroup(res.data);
+      console.log("Group data:", res.data);
+      if (currentUserId !== null && res.data.members?.length) {
+        const currentMember = res.data.members.find(
+          (m: Member) => m.id === currentUserId
+        );
 
-      const isAdmin = currentMember?.role === "ADMIN";
-      setIsGroupAdmin(isAdmin);
+        const isAdmin = currentMember?.role === "ADMIN";
+        setIsGroupAdmin(isAdmin);
+      }
 
-      console.log("Current user role:", currentMember?.role);
-      console.log("Is admin:", isAdmin);
+    } catch (err) {
+      console.log("Failed to load group", err);
+    } finally {
+      setLoading(false);
     }
-
-  } catch (err) {
-    console.log("Failed to load group", err);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   if (loading) {
     return <Text>Loading...</Text>;
@@ -143,7 +206,7 @@ export default function GroupDetailsScreen() {
   };
 
   const isExpenseCreator = (expenseCreatorId: number) => {
-    console.log("Current username:", currentUsername,expenseCreatorId);
+    console.log("Current username:", currentUsername, expenseCreatorId);
     return currentUserId === expenseCreatorId;
 
   };
@@ -155,21 +218,39 @@ export default function GroupDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{group.name}</Text>
-      <Text style={styles.subtitle}>{group.members.length} members</Text>
+      {/* Header row: title + Add Member button */}
+      <View style={styles.headerRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>{group.name}</Text>
+          <Text style={styles.subtitle}>{group.members.length} members</Text>
+        </View>
+        {isGroupAdmin && (
+          <TouchableOpacity
+            style={styles.addMemberButton}
+            onPress={() => {
+              setMemberSearch("");
+              setSearchResults([]);
+              setShowAddMemberModal(true);
+              loadInvites();
+            }}
+          >
+            <Text style={styles.addMemberButtonText}>+ Add Member</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <Text style={styles.section}>Members</Text>
       {group.members.map((m) => {
-          
-          return (
-            <Text key={m.id} style={styles.member}>
-              • {m.name}
-              {m.role=="ADMIN" && (
-                <Text style={styles.adminBadge}> ADMIN</Text>
-              )}
-            </Text>
-          );
-        })}
+
+        return (
+          <Text key={m.id} style={styles.member}>
+            • {m.name}
+            {m.role == "ADMIN" && (
+              <Text style={styles.adminBadge}> ADMIN</Text>
+            )}
+          </Text>
+        );
+      })}
 
 
       {/* Settlement Section */}
@@ -340,12 +421,165 @@ export default function GroupDetailsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Add Member Modal */}
+      <Modal
+        visible={showAddMemberModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAddMemberModal(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAddMemberModal(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
+            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 16 }}>
+              Add Member
+            </Text>
+
+            {/* Search / Dropdown */}
+            <TextInput
+              placeholder="Search by name or email…"
+              style={styles.input}
+              value={memberSearch}
+              onChangeText={setMemberSearch}
+              autoFocus
+            />
+
+            {/* Search results */}
+            <View style={styles.dropdownList}>
+              {searchLoading ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : memberSearch.trim() === "" ? (
+                <Text style={styles.dropdownHint}>Start typing to search users</Text>
+              ) : searchResults.length === 0 ? (
+                <Text style={styles.dropdownHint}>No users found</Text>
+              ) : (
+                <ScrollView style={{ width: "100%" }} keyboardShouldPersistTaps="handled">
+                  {(() => {
+                    const inviteMap = new Map(
+                      invites.map(inv => [inv.invitedUserId, inv.status])
+                    );
+                    return searchResults.map((user) => {
+                      const status = inviteMap.get(user.id);
+                      return (
+                        <View key={user.id} style={styles.resultRow}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.resultUsername}>{user.username}</Text>
+                            <Text style={styles.resultName}>{user.name}</Text>
+                          </View>
+                          {status === "PENDING" ? (
+                            <View style={styles.pendingBadge}>
+                              <Text style={styles.pendingText}>Pending</Text>
+                            </View>
+                          ) : status === "REJECTED" ? (
+                            <View style={{ alignItems: "center", gap: 4 }}>
+                              <Text style={styles.rejectedText}>Rejected</Text>
+                              <TouchableOpacity
+                                style={[
+                                  styles.sendButton,
+                                  sendingInvite === user.id && { opacity: 0.6 },
+                                ]}
+                                disabled={sendingInvite === user.id}
+                                onPress={() => sendInvite(user.username, user.id)}
+                              >
+                                {sendingInvite === user.id ? (
+                                  <ActivityIndicator size="small" color="#fff" />
+                                ) : (
+                                  <Text style={styles.sendButtonText}>Send Again</Text>
+                                )}
+                              </TouchableOpacity>
+                            </View>
+                          ) : (
+                            <TouchableOpacity
+                              style={[
+                                styles.sendButton,
+                                sendingInvite === user.id && { opacity: 0.6 },
+                              ]}
+                              disabled={sendingInvite === user.id}
+                              onPress={() => sendInvite(user.username, user.id)}
+                            >
+                              {sendingInvite === user.id ? (
+                                <ActivityIndicator size="small" color="#fff" />
+                              ) : (
+                                <Text style={styles.sendButtonText}>Send Request</Text>
+                              )}
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    });
+                  })()}
+                </ScrollView>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: "#777", marginTop: 16 }]}
+              onPress={() => setShowAddMemberModal(false)}
+            >
+              <Text style={styles.modalButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
 const styles = StyleSheet.create({
   container: {
     padding: 16,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  addMemberButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    marginTop: 4,
+    alignSelf: "flex-start",
+  },
+  addMemberButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+  dropdownList: {
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+    borderRadius: 8,
+    minHeight: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  dropdownHint: {
+    color: "#999",
+    fontSize: 13,
+  },
+  resultRow: {
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  resultUsername: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000",
+  },
+  resultName: {
+    fontSize: 12,
+    color: "#888",
+    marginTop: 1,
   },
   title: {
     fontSize: 26,
@@ -444,5 +678,38 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     fontWeight: "600",
     fontSize: 12,
+  },
+  sendButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 100,
+  },
+  sendButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  pendingBadge: {
+    backgroundColor: "#F0F0F0",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 100,
+  },
+  pendingText: {
+    color: "#888",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  rejectedText: {
+    color: "#FF3B30",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

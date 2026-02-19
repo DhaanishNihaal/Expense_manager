@@ -17,9 +17,10 @@ public class UserController {
     }
     @GetMapping("/users/search")
     public List<UserSearchResponse> searchUsers(
-            @RequestParam String keyword) {
+            @RequestParam String keyword,
+            @RequestParam Long groupId) {
     
-        return userRepository.searchUsers(keyword)
+        return userRepository.searchUsersNotInGroup(keyword,groupId)
                 .stream()
                 .map(u -> new UserSearchResponse(
                         u.getId(),

@@ -20,8 +20,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
   @Query("""
     SELECT u FROM User u 
-    WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%'))
-       OR LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+    WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :keyword, '%'))
+       OR LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+       AND u.id NOT IN (SELECT gm.user.id FROM GroupMember gm WHERE gm.group.id = :groupId)
 """)
-  List<User> searchUsers(@Param("keyword") String keyword);
+  List<User> searchUsersNotInGroup(@Param("keyword") String keyword, @Param("groupId") Long groupId);
 }

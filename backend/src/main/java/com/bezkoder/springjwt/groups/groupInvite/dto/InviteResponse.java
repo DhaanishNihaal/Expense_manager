@@ -7,14 +7,16 @@ public class InviteResponse {
     private String groupName;
     private String invitedBy;
     private String status;
+    private Long invitedUserId;
 
     public InviteResponse(Long inviteId, Long groupId, String groupName,
-                          String invitedBy, String status) {
+                          String invitedBy, String status, Long invitedUserId) {
         this.inviteId = inviteId;
         this.groupId = groupId;
         this.groupName = groupName;
         this.invitedBy = invitedBy;
         this.status = status;
+        this.invitedUserId = invitedUserId;
     }
 
     // Getters
@@ -23,4 +25,5 @@ public class InviteResponse {
     public String getGroupName() { return groupName; }
     public String getInvitedBy() { return invitedBy; }
     public String getStatus() { return status; }
+    public Long getInvitedUserId() { return invitedUserId; }
 }

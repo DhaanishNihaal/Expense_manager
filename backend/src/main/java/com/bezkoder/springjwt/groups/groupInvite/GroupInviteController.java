@@ -41,6 +41,11 @@ public class GroupInviteController {
     public List<InviteResponse> getMyInvites(Authentication authentication) {
         return inviteService.getMyInvites(authentication.getName());
     }
+    // Get group invites
+    @GetMapping("/groups/{groupId}/invites")
+    public List<InviteResponse> getGroupInvites(@PathVariable Long groupId) {
+        return inviteService.getGroupInvites(groupId);
+    }
 
     // 🔹 Accept
     @PostMapping("/invites/{inviteId}/accept")

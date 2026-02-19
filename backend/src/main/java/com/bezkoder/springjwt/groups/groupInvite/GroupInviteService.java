@@ -58,7 +58,7 @@ public class GroupInviteService {
         invite.setGroup(group);
         invite.setInvitedUser(invitedUser);
         invite.setInvitedBy(invitedBy);
-
+        
         inviteRepository.save(invite);
     }
 
@@ -75,7 +75,8 @@ public class GroupInviteService {
                         invite.getGroup().getId(),
                         invite.getGroup().getName(),
                         invite.getInvitedBy().getUsername(),
-                        invite.getStatus()
+                        invite.getStatus(),
+                        invite.getInvitedUser().getId()
                 ))
                 .toList();
     }
@@ -112,5 +113,19 @@ public class GroupInviteService {
 
         invite.setStatus("REJECTED");
         inviteRepository.save(invite);
+    }
+    // Get group invites
+    public List<InviteResponse> getGroupInvites(Long groupId) {
+        return inviteRepository.findByGroupId(groupId)
+                .stream()
+                .map(invite -> new InviteResponse(
+                        invite.getId(),
+                        invite.getGroup().getId(),
+                        invite.getGroup().getName(),
+                        invite.getInvitedBy().getUsername(),
+                        invite.getStatus(),
+                        invite.getInvitedUser().getId()
+                ))
+                .toList();
     }
 }
