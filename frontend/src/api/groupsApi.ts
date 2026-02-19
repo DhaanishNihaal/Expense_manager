@@ -8,6 +8,10 @@ export const fetchGroups = async () => {
 
 export const fetchGroupMembers = async (groupId: number): Promise<User[]> => {
   const res = await api.get(`/api/groups/${groupId}`);
-  // Extract members array from the group object
   return res.data.members || [];
+};
+
+export const createGroup = async (name: string, description: string) => {
+  const res = await api.post("/api/groups", { name, description });
+  return res.data;
 };
