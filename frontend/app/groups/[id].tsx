@@ -218,8 +218,11 @@ export default function GroupDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header row: title + Add Member button */}
+      {/* Header row: back + title + Add Member button */}
       <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Text style={styles.backIcon}>←</Text>
+        </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>{group.name}</Text>
           <Text style={styles.subtitle}>{group.members.length} members</Text>
@@ -375,9 +378,20 @@ export default function GroupDetailsScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 16 }}>
-              Add Expense
-            </Text>
+            {/* Modal header with X close */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Expense</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowAddExpenseModal(false);
+                  setNewTitle("");
+                  setNewDescription("");
+                }}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeIcon}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
             <Text style={{ fontSize: 14, fontWeight: "600", marginBottom: 8 }}>
               Title
@@ -400,24 +414,12 @@ export default function GroupDetailsScreen() {
               multiline
             />
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: "#007AFF" }]}
-                onPress={handleAddExpense}
-              >
-                <Text style={styles.modalButtonText}>Add</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: "#777" }]}
-                onPress={() => {
-                  setShowAddExpenseModal(false);
-                  setNewTitle("");
-                  setNewDescription("");
-                }}
-              >
-                <Text style={styles.modalButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: "#007AFF" }]}
+              onPress={handleAddExpense}
+            >
+              <Text style={styles.modalButtonText}>Add Expense</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -435,9 +437,15 @@ export default function GroupDetailsScreen() {
           onPress={() => setShowAddMemberModal(false)}
         >
           <TouchableOpacity activeOpacity={1} style={styles.modalContent}>
-            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 16 }}>
-              Add Member
-            </Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Member</Text>
+              <TouchableOpacity
+                onPress={() => setShowAddMemberModal(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeIcon}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
             {/* Search / Dropdown */}
             <TextInput
@@ -710,6 +718,39 @@ const styles = StyleSheet.create({
   rejectedText: {
     color: "#FF3B30",
     fontSize: 12,
+    fontWeight: "600",
+  },
+  backButton: {
+    paddingRight: 12,
+    paddingVertical: 4,
+    justifyContent: "center",
+  },
+  backIcon: {
+    fontSize: 22,
+    color: "#007AFF",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1A1A1A",
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#F0F0F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closeIcon: {
+    fontSize: 16,
+    color: "#555",
     fontWeight: "600",
   },
 });

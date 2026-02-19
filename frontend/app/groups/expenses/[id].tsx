@@ -12,9 +12,9 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useEffect, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { fetchExpenseTransactions, addExpenseTransaction ,deletePayment} from "@/src/api/transactionApi";
+import { fetchExpenseTransactions, addExpenseTransaction, deletePayment } from "@/src/api/transactionApi";
 import { fetchExpenseSettlements, Settlement } from "@/src/api/settlementApi";
 import { fetchGroupMembers } from "@/src/api/groupsApi";
 import { ExpenseTransaction } from "@/src/types/transaction";
@@ -23,6 +23,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ExpenseTransactionsScreen() {
   const { id, groupId } = useLocalSearchParams();
+  const router = useRouter();
 
   // Transaction state
   const [transactions, setTransactions] = useState<ExpenseTransaction[]>([]);
@@ -96,7 +97,7 @@ export default function ExpenseTransactionsScreen() {
       Alert.alert("Error", "Could not determine group");
       return;
     }
-    
+
     setLoadingMembers(true);
     try {
       const data = await fetchGroupMembers(Number(groupId));
@@ -172,11 +173,11 @@ export default function ExpenseTransactionsScreen() {
    */
   const handleSelectAll = () => {
     const allMemberIds = members.map((member) => member.id);
-    
+
     // If "Doesn't include you" is checked, filter out current user
     // For now, we'll select all members
     // The current user filtering will be handled when fetching members
-    
+
     setSelectedReceivers(allMemberIds);
   };
 
@@ -258,21 +259,21 @@ export default function ExpenseTransactionsScreen() {
   }, {} as Record<string, any>);
 
   const handleDeletePayment = async (paymentGroupId: string) => {
-    try{
+    try {
       await deletePayment(Number(id), paymentGroupId);
       Alert.alert("Success", "Payment deleted");
       loadTransactions();
       loadSettlements();
     }
-    catch(err){
-      console.log("delete failed",err);
+    catch (err) {
+      console.log("delete failed", err);
     }
   };
   const payerSummaries = Object.values(groupedByPaymentId);
 
   const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
 
-  
+
 
   if (loading) {
     return (
@@ -285,9 +286,13 @@ export default function ExpenseTransactionsScreen() {
   return (
     <View style={styles.container}>
       <ScrollView style={{ padding: 16 }} contentContainerStyle={{ paddingBottom: 140 }}>
-        <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 12 }}>
-          Transactions
-        </Text>
+        {/* Header with back button */}
+        <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ paddingRight: 12 }}>
+            <Text style={{ fontSize: 22, color: "#007AFF" }}>←</Text>
+          </TouchableOpacity>
+          <Text style={{ fontSize: 22, fontWeight: "bold" }}>Transactions</Text>
+        </View>
 
         {/* Payer Summary List */}
         {payerSummaries.map((payer) => (
@@ -303,7 +308,7 @@ export default function ExpenseTransactionsScreen() {
               borderWidth: 1,
               borderColor: "#E5E5EA",
             }}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => toggle(payer.paymentGroupId)}
                 style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
               >
@@ -321,7 +326,7 @@ export default function ExpenseTransactionsScreen() {
               </TouchableOpacity>
 
               {/* Three-dot menu on payer summary - only show if current user is payer */}
-              {currentUserId==payer.payerId && (
+              {currentUserId == payer.payerId && (
                 <View style={{ position: "relative" }}>
                   <TouchableOpacity
                     onPress={() => setOpenMenuId(openMenuId === payer.paymentGroupId ? null : payer.paymentGroupId)}
@@ -382,8 +387,8 @@ export default function ExpenseTransactionsScreen() {
             {expandedPayers.has(payer.paymentGroupId) && (
               <View style={{ backgroundColor: "#f2f2f2", borderRadius: 8, borderTopLeftRadius: 0, borderTopRightRadius: 0, paddingVertical: 8 }}>
                 {payer.splits.map((split: ExpenseTransaction) => (
-                  <View 
-                    key={split.transactionId} 
+                  <View
+                    key={split.transactionId}
                     style={{
                       flexDirection: "row",
                       justifyContent: "space-between",
@@ -468,9 +473,21 @@ export default function ExpenseTransactionsScreen() {
       >
         <View style={styles.modalOverlay}>
           <ScrollView style={styles.modalContent}>
-            <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 16 }}>
-              Add Transaction
-            </Text>
+            {/* Modal header with X close */}
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <Text style={{ fontSize: 18, fontWeight: "bold" }}>Add Transaction</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowAddModal(false);
+                  setSelectedReceivers([""]);
+                  setAmount("");
+                  setExcludeMe(false);
+                }}
+                style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "#F0F0F0", justifyContent: "center", alignItems: "center" }}
+              >
+                <Text style={{ fontSize: 16, color: "#555", fontWeight: "600" }}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
             {loadingMembers ? (
               <ActivityIndicator size="large" color="#007AFF" />
@@ -481,7 +498,7 @@ export default function ExpenseTransactionsScreen() {
                   <Text style={{ fontSize: 14, fontWeight: "600" }}>
                     Receivers
                   </Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.selectAllButton}
                     onPress={handleSelectAll}
                   >
@@ -533,26 +550,13 @@ export default function ExpenseTransactionsScreen() {
                   keyboardType="decimal-pad"
                 />
 
-                {/* Action Buttons */}
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: "#007AFF" }]}
-                    onPress={handleAddTransaction}
-                  >
-                    <Text style={styles.modalButtonText}>Add</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalButton, { backgroundColor: "#777" }]}
-                    onPress={() => {
-                      setShowAddModal(false);
-                      setSelectedReceivers([""]);
-                      setAmount("");
-                      setExcludeMe(false);
-                    }}
-                  >
-                    <Text style={styles.modalButtonText}>Cancel</Text>
-                  </TouchableOpacity>
-                </View>
+                {/* Action Buttons - only Add */}
+                <TouchableOpacity
+                  style={[styles.modalButton, { backgroundColor: "#007AFF", marginTop: 8 }]}
+                  onPress={handleAddTransaction}
+                >
+                  <Text style={styles.modalButtonText}>Add Transaction</Text>
+                </TouchableOpacity>
               </>
             )}
           </ScrollView>

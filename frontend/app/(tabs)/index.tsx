@@ -34,6 +34,7 @@ export default function GroupsScreen() {
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [creating, setCreating] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -141,9 +142,36 @@ export default function GroupsScreen() {
               {groups.length} {groups.length === 1 ? "group" : "groups"}
             </Text>
           </View>
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
+          {/* Three-dot menu */}
+          <View style={{ position: "relative" }}>
+            <TouchableOpacity
+              style={styles.menuBtn}
+              onPress={() => setShowMenu((v) => !v)}
+            >
+              <Text style={styles.menuDots}>⋯</Text>
+            </TouchableOpacity>
+            {showMenu && (
+              <>
+                {/* Invisible overlay to dismiss */}
+                <TouchableOpacity
+                  style={styles.menuOverlay}
+                  onPress={() => setShowMenu(false)}
+                  activeOpacity={1}
+                />
+                <View style={styles.menuDropdown}>
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      handleLogout();
+                    }}
+                  >
+                    <Text style={styles.menuItemText}>Logout</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
         </View>
 
         {/* Groups List */}
@@ -179,7 +207,15 @@ export default function GroupsScreen() {
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Create Group</Text>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Create Group</Text>
+                <TouchableOpacity
+                  onPress={() => setShowCreateModal(false)}
+                  style={styles.closeButton}
+                >
+                  <Text style={styles.closeIcon}>✕</Text>
+                </TouchableOpacity>
+              </View>
 
               <Text style={styles.fieldLabel}>Name *</Text>
               <TextInput
@@ -211,12 +247,6 @@ export default function GroupsScreen() {
                   ) : (
                     <Text style={styles.modalBtnText}>Create</Text>
                   )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modalBtn, { backgroundColor: "#8E8E93" }]}
-                  onPress={() => setShowCreateModal(false)}
-                >
-                  <Text style={styles.modalBtnText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -430,5 +460,70 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "600",
     fontSize: 15,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#F0F0F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  closeIcon: {
+    fontSize: 16,
+    color: "#555",
+    fontWeight: "600",
+  },
+  menuBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F0F0F0",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  menuDots: {
+    fontSize: 20,
+    color: "#444",
+    lineHeight: 22,
+  },
+  menuOverlay: {
+    position: "absolute",
+    top: -800,
+    left: -800,
+    width: 2000,
+    height: 2000,
+    zIndex: 10,
+  },
+  menuDropdown: {
+    position: "absolute",
+    right: 0,
+    top: 40,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 8,
+    minWidth: 140,
+    zIndex: 20,
+  },
+  menuItem: {
+    paddingVertical: 13,
+    paddingHorizontal: 18,
+  },
+  menuItemText: {
+    fontSize: 15,
+    color: "#FF3B30",
+    fontWeight: "600",
   },
 });
