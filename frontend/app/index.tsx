@@ -26,8 +26,8 @@ export default function Index() {
   }
 
   return isLoggedIn ? (
-    <Redirect href="/groups" />
+    <Redirect href="/(tabs)" />
   ) : (
-    <Redirect href="/login" />
+    <Redirect href="/(auth)/login" />
   );
 }

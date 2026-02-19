@@ -19,7 +19,7 @@ export default function LoginScreen() {
       await login(username, password);
 
       // login successful → go to groups
-      router.replace("/groups");
+      router.replace("/(tabs)");
     } catch (err: any) {
       setError("Invalid username or password");
     } finally {

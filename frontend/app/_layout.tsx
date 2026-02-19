@@ -26,11 +26,11 @@ export default function RootLayout() {
     const inAuthGroup = segments[0] === "(auth)";
 
     if (!isAuthenticated && !inAuthGroup) {
-      router.replace("/login");
+      router.replace("/(auth)/login");
     }
 
     if (isAuthenticated && inAuthGroup) {
-      router.replace("/groups/groups");
+      router.replace("/(tabs)");
     }
   }, [isAuthenticated, isCheckingAuth]);
 
