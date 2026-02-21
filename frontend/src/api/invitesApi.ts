@@ -7,6 +7,7 @@ export interface Invite {
     invitedBy: string;
     status: string;
     invitedUserId: number;
+    invitedUsername: string;
 }
 
 export const getMyInvites = async (): Promise<Invite[]> => {
@@ -32,4 +33,13 @@ export const acceptInvite = async (inviteId: number): Promise<void> => {
 
 export const rejectInvite = async (inviteId: number): Promise<void> => {
     await api.post(`/api/invites/${inviteId}/reject`);
+};
+
+export const getMySents = async (): Promise<Invite[]> => {
+    const res = await api.get("/api/users/me/sents");
+    return res.data;
+};
+
+export const withdrawInvite = async (inviteId: number): Promise<void> => {
+    await api.delete(`/api/invites/${inviteId}/delete`);
 };

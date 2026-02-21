@@ -256,6 +256,7 @@ export default function GroupDetailsScreen() {
       })}
 
 
+
       {/* Settlement Section */}
       {settlements.length > 0 && (
         <View style={{ marginTop: 20, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#E5E5EA" }}>

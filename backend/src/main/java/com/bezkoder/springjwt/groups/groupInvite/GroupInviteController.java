@@ -1,6 +1,7 @@
 package com.bezkoder.springjwt.groups.groupInvite;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,6 +42,11 @@ public class GroupInviteController {
     public List<InviteResponse> getMyInvites(Authentication authentication) {
         return inviteService.getMyInvites(authentication.getName());
     }
+    // Get My sents
+    @GetMapping("/users/me/sents")
+    public List<InviteResponse> getMySents(Authentication authentication) {
+        return inviteService.getMySents(authentication.getName());
+    }
     // Get group invites
     @GetMapping("/groups/{groupId}/invites")
     public List<InviteResponse> getGroupInvites(@PathVariable Long groupId) {
@@ -63,5 +69,12 @@ public class GroupInviteController {
 
         inviteService.rejectInvite(inviteId, authentication.getName());
         return ResponseEntity.ok("Invite rejected");
+    }
+    @DeleteMapping("/invites/{inviteId}/delete")
+    public ResponseEntity<?> deleteInvite(@PathVariable Long inviteId,
+                                          Authentication authentication) {
+
+        inviteService.deleteInvite(inviteId, authentication.getName());
+        return ResponseEntity.ok("Invite deleted");
     }
 }
