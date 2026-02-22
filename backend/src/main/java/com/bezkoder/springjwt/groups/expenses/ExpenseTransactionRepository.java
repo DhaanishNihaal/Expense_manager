@@ -31,4 +31,7 @@ public interface ExpenseTransactionRepository
     List<ExpenseTransaction> findAll();
 
     List<ExpenseTransaction> findByPayerUsernameOrReceiverUsername(String payerUsername, String receiverUsername);
+
+    @Query("SELECT COALESCE(SUM(et.amount), 0) FROM ExpenseTransaction et WHERE et.expense.group.id = :groupId")
+    Double sumAmountByGroupId(@Param("groupId") Long groupId);
 }

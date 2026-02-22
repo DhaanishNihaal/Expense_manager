@@ -11,9 +11,11 @@ import java.util.List;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+    private final ExpenseTransactionRepository transactionRepository;
 
-    public ExpenseController(ExpenseService expenseService) {
+    public ExpenseController(ExpenseService expenseService, ExpenseTransactionRepository transactionRepository) {
         this.expenseService = expenseService;
+        this.transactionRepository = transactionRepository;
     }
 
     @PostMapping
@@ -38,5 +40,10 @@ public class ExpenseController {
 
         String username = authentication.getName();
         expenseService.deleteExpense(groupId, expenseId, username);
+    }
+
+    @GetMapping("/total")
+    public Double getTotalSpent(@PathVariable Long groupId) {
+        return transactionRepository.sumAmountByGroupId(groupId);
     }
 }

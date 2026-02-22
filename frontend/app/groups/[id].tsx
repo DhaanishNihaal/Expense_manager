@@ -18,6 +18,7 @@ export default function GroupDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
+  const [totalSpent, setTotalSpent] = useState<number>(0);
   const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
@@ -37,6 +38,7 @@ export default function GroupDetailsScreen() {
     getCurrentUser();
     fetchExpensesByGroup(Number(id)).then(setExpenses);
     loadSettlements();
+    loadTotalSpent();
   }, [id]);
 
   useEffect(() => { if (id && currentUserId) fetchGroup(); }, [id, currentUserId]);
@@ -46,6 +48,11 @@ export default function GroupDetailsScreen() {
       const str = await AsyncStorage.getItem("user");
       if (str) { const u = JSON.parse(str); setCurrentUserId(Number(u.id)); }
     } catch (e) { console.error(e); }
+  };
+
+  const loadTotalSpent = async () => {
+    try { const r = await api.get(`/api/groups/${id}/expenses/total`); setTotalSpent(r.data ?? 0); }
+    catch (e) { console.error(e); }
   };
 
   const loadInvites = async () => {
@@ -98,6 +105,7 @@ export default function GroupDetailsScreen() {
       await addExpense(Number(id), { title: newTitle, description: newDescription || undefined, totalAmount: 0 });
       setShowAddExpenseModal(false); setNewTitle(""); setNewDescription("");
       fetchExpensesByGroup(Number(id)).then(setExpenses);
+      loadTotalSpent();
       Alert.alert("Success", "Expense added");
     } catch { Alert.alert("Error", "Failed to add expense"); }
   };
@@ -107,11 +115,11 @@ export default function GroupDetailsScreen() {
       await deleteExpense(Number(id), expenseId);
       fetchExpensesByGroup(Number(id)).then(setExpenses);
       loadSettlements();
+      loadTotalSpent();
     } catch { Alert.alert("Error", "Failed to delete expense"); }
   };
 
   const canDelete = (exp: Expense) => isGroupAdmin || currentUserId === exp.createdById;
-  const totalExpenses = expenses.reduce((s, e) => s + (e.totalAmount || 0), 0);
 
   if (loading) return <Text>Loading...</Text>;
   if (!group) return <Text>Group not found</Text>;
@@ -194,7 +202,7 @@ export default function GroupDetailsScreen() {
       {/* ── Total ── */}
       <View style={styles.totalCard}>
         <Text style={styles.totalLabel}>Total</Text>
-        <Text style={styles.totalAmount}>₹{totalExpenses.toFixed(2)}</Text>
+        <Text style={styles.totalAmount}>₹{totalSpent.toFixed(2)}</Text>
       </View>
 
       {/* ── Add Expense Modal ── */}
