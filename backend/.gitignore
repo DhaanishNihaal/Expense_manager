@@ -30,10 +30,7 @@ build/
 ### VS Code ###
 .vscode/
 
-### CRITICAL: Sensitive Configuration Files ###
-# Contains MySQL password and JWT secret - DO NOT COMMIT!
-**/application.properties
-**/application-*.properties
+
 
 # If you want to share configs, create application.properties.example instead
 # with placeholder values like: spring.datasource.password=YOUR_PASSWORD_HERE
