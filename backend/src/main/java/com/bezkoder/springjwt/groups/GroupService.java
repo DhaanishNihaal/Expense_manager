@@ -138,5 +138,28 @@ public class GroupService {
         );
     }
 
+    public void leaveGroup(Long groupId, String username) {
+
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        GroupMember member = groupMemberRepository
+                .findByGroupIdAndUserId(groupId, user.getId())
+                .orElseThrow(() -> new RuntimeException("Not a group member"));
+
+        // 🔴 Prevent last admin from leaving
+        if (member.getRole().equals("ADMIN")) {
+
+            long adminCount = groupMemberRepository
+                    .countByGroupIdAndRole(groupId, "ADMIN");
+
+            if (adminCount == 1) {
+                throw new RuntimeException("Cannot leave as last admin");
+            }
+        }
+
+        groupMemberRepository.delete(member);
+    }
+
     
 }

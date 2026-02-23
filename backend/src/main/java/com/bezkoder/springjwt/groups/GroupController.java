@@ -5,6 +5,7 @@ import com.bezkoder.springjwt.groups.dto.CreateGroupRequest;
 import com.bezkoder.springjwt.groups.dto.GroupResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity; 
 import java.util.List;
 
 import com.bezkoder.springjwt.groups.dto.GroupDetailResponse;
@@ -47,6 +48,15 @@ public class GroupController {
                                                Authentication authentication) {
 
         return groupService.getGroupDetails(groupId, authentication.getName());
+    }
+
+    @DeleteMapping("/{groupId}/leave")
+    public ResponseEntity<?> leaveGroup(
+        @PathVariable Long groupId,
+        Authentication authentication) {
+
+    groupService.leaveGroup(groupId, authentication.getName());
+    return ResponseEntity.ok("Left group successfully");
     }
     
 

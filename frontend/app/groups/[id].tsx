@@ -32,6 +32,8 @@ export default function GroupDetailsScreen() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [invites, setInvites] = useState<{ invitedUserId: number; status: string }[]>([]);
   const [sendingInvite, setSendingInvite] = useState<number | null>(null);
+  const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -117,6 +119,21 @@ export default function GroupDetailsScreen() {
       loadSettlements();
       loadTotalSpent();
     } catch { Alert.alert("Error", "Failed to delete expense"); }
+  };
+
+  const handleLeaveGroup = async () => {
+    setLeaving(true);
+    try {
+      await api.delete(`/api/groups/${id}/leave`);
+      setShowLeaveConfirmation(false);
+      setShowGroupInfo(false);
+      router.replace("/groups");
+    } catch (e: any) {
+      const msg = e.response?.data || "Failed to leave group";
+      Alert.alert("Error", msg);
+    } finally {
+      setLeaving(false);
+    }
   };
 
   const canDelete = (exp: Expense) => isGroupAdmin || currentUserId === exp.createdById;
@@ -321,8 +338,49 @@ export default function GroupDetailsScreen() {
                 </View>
               ))}
             </ScrollView>
+
+            <View style={styles.divider} />
+
+            <TouchableOpacity
+              style={styles.leaveGroupButton}
+              onPress={() => setShowLeaveConfirmation(true)}
+            >
+              <Text style={styles.leaveGroupButtonText}>Leave Group</Text>
+            </TouchableOpacity>
           </TouchableOpacity>
         </TouchableOpacity>
+      </Modal>
+
+      {/* ── Leave Group Confirmation Modal ── */}
+      <Modal visible={showLeaveConfirmation} transparent animationType="fade" onRequestClose={() => setShowLeaveConfirmation(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmationCard}>
+            <Text style={styles.confirmationTitle}>Leave "{group.name}" group?</Text>
+            <Text style={styles.confirmationMsg}>You will no longer be able to see expenses or settle debts in this group.</Text>
+
+            <View style={styles.confirmationActions}>
+              <TouchableOpacity
+                style={[styles.confirmButton, { backgroundColor: "#F2F2F7" }]}
+                onPress={() => setShowLeaveConfirmation(false)}
+                disabled={leaving}
+              >
+                <Text style={[styles.confirmButtonText, { color: "#000" }]}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.confirmButton, { backgroundColor: "#FF3B30" }]}
+                onPress={handleLeaveGroup}
+                disabled={leaving}
+              >
+                {leaving ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.confirmButtonText}>Leave</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
 
     </ScrollView>
@@ -401,4 +459,58 @@ const styles = StyleSheet.create({
   memberName: { flex: 1, fontSize: 15, fontWeight: "500", color: "#1A1A1A" },
   adminChip: { backgroundColor: "#EBF3FF", paddingVertical: 3, paddingHorizontal: 8, borderRadius: 10 },
   adminChipText: { color: "#007AFF", fontSize: 11, fontWeight: "700" },
+  leaveGroupButton: {
+    marginTop: 12,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: "#FFF5F5",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#FFE5E5",
+  },
+  leaveGroupButtonText: {
+    color: "#FF3B30",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  confirmationCard: {
+    width: "85%",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  confirmationTitle: {
+    fontSize: 19,
+    fontWeight: "bold",
+    color: "#1A1A1A",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  confirmationMsg: {
+    fontSize: 15,
+    color: "#666",
+    lineHeight: 22,
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  confirmationActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#fff",
+  },
 });

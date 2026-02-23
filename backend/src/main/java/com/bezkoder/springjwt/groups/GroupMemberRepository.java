@@ -16,4 +16,6 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 
     // Get a specific member (useful for role checks)
     Optional<GroupMember> findByGroupIdAndUserId(Long groupId, Long userId);
+    
+    long countByGroupIdAndRole(Long groupId, String role);  
 }
