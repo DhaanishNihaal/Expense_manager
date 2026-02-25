@@ -27,6 +27,7 @@ export default function GroupDetailsScreen() {
   const [isGroupAdmin, setIsGroupAdmin] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [openMemberMenuId, setOpenMemberMenuId] = useState<number | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
   const [searchResults, setSearchResults] = useState<UserSearch[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -133,6 +134,17 @@ export default function GroupDetailsScreen() {
       Alert.alert("Error", msg);
     } finally {
       setLeaving(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: number) => {
+    try {
+      await api.delete(`/api/groups/${id}/remove/${memberId}`);
+      Alert.alert("Success", "Member removed successfully");
+      fetchGroup();
+    } catch (e: any) {
+      const msg = e.response?.data || "Failed to remove member";
+      Alert.alert("Error", msg);
     }
   };
 
@@ -329,12 +341,53 @@ export default function GroupDetailsScreen() {
             <Text style={styles.membersLabel}>Members</Text>
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
               {group.members.map(m => (
-                <View key={m.id} style={styles.memberRow}>
-                  <View style={styles.memberAvatar}>
-                    <Text style={styles.memberAvatarText}>{m.name.charAt(0).toUpperCase()}</Text>
+                <View key={m.id} style={{ position: "relative" }}>
+                  <View style={styles.memberRow}>
+                    <View style={styles.memberAvatar}>
+                      <Text style={styles.memberAvatarText}>{m.name.charAt(0).toUpperCase()}</Text>
+                    </View>
+                    <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text style={styles.memberName}>{m.name}</Text>
+                      {m.role === "ADMIN" && <View style={styles.adminChip}><Text style={styles.adminChipText}>Admin</Text></View>}
+                    </View>
+                    {isGroupAdmin && m.id !== currentUserId && (
+                      <TouchableOpacity
+                        onPress={() => setOpenMemberMenuId(openMemberMenuId === m.id ? null : m.id)}
+                        style={{ padding: 8 }}
+                      >
+                        <Text style={{ fontSize: 18, color: "#8E8E93" }}>⋯</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                  <Text style={styles.memberName}>{m.name}</Text>
-                  {m.role === "ADMIN" && <View style={styles.adminChip}><Text style={styles.adminChipText}>Admin</Text></View>}
+                  {openMemberMenuId === m.id && (
+                    <View style={[styles.dropdownMenu, { top: 40, right: 10 }]}>
+                      <TouchableOpacity
+                        style={styles.dropdownMenuItem}
+                        onPress={() => {
+                          setOpenMemberMenuId(null);
+                          Alert.alert("Coming Soon", "Promote as admin feature will be available shortly.");
+                        }}
+                      >
+                        <Text style={styles.dropdownMenuText}>Promote as admin</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.dropdownMenuItem}
+                        onPress={() => {
+                          setOpenMemberMenuId(null);
+                          if (Platform.OS === "web") {
+                            if (window.confirm(`Remove ${m.name} from group?`)) handleRemoveMember(m.id);
+                          } else {
+                            Alert.alert("Remove member?", `Are you sure you want to remove ${m.name}?`, [
+                              { text: "Cancel", style: "cancel" },
+                              { text: "Remove", style: "destructive", onPress: () => handleRemoveMember(m.id) },
+                            ]);
+                          }
+                        }}
+                      >
+                        <Text style={[styles.dropdownMenuText, { color: "red" }]}>Remove from group</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
               ))}
             </ScrollView>
@@ -418,6 +471,8 @@ const styles = StyleSheet.create({
   totalCard: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, backgroundColor: "#007AFF", borderRadius: 14, padding: 18 },
   totalLabel: { color: "#fff", fontSize: 16, fontWeight: "600" },
   totalAmount: { color: "#fff", fontSize: 22, fontWeight: "bold" },
+  dropdownMenuItem: { paddingVertical: 10, paddingHorizontal: 16 },
+  dropdownMenuText: { fontSize: 14, fontWeight: "500", color: "#1A1A1A" },
   // Modals
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
   modalContent: { width: "90%", backgroundColor: "#fff", padding: 20, borderRadius: 14 },

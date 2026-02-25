@@ -170,5 +170,23 @@ public class GroupService {
 
     }
 
+    public void removeMember(Long groupId, String adminUsername, Long memberId){
+        User admin = userRepository.findByUsername(adminUsername)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        GroupMember adminMember = groupMemberRepository.findByGroupIdAndUserId(groupId, admin.getId())
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        if (!adminMember.getRole().equals("ADMIN")) {
+            throw new RuntimeException("Only ADMIN can remove members");
+        }
+        User member = userRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+        GroupMember targetMember = groupMemberRepository.findByGroupIdAndUserId(groupId,memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+        if(adminUsername.equals(member.getUsername())){
+            throw new RuntimeException("Cannot remove yourself");
+        }
+        groupMemberRepository.delete(targetMember);   
+    }
+
     
 }
