@@ -18,4 +18,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
     Optional<GroupMember> findByGroupIdAndUserId(Long groupId, Long userId);
     
     long countByGroupIdAndRole(Long groupId, String role);  
+    
+    List<GroupMember> findByGroupIdOrderByJoinedAtAsc(Long groupId);
+
+    void deleteById(Long id);
 }

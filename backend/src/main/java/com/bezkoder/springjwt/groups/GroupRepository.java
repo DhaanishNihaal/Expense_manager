@@ -25,4 +25,13 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
         WHERE gm.user.id = :userId
     """)
     List<Group> findGroupsByUserId(@Param("userId") Long userId);
+    @Query("""
+        SELECT gm.group
+        FROM GroupMember gm
+        WHERE gm.group.id = :groupId
+    """)
+    List<GroupMember> findByGroupId(@Param("groupId") Long groupId);
+
+    void deleteById(Long groupId);
+
  }

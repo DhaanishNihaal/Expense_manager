@@ -5,6 +5,7 @@ import com.bezkoder.springjwt.groups.dto.GroupResponse;
 import com.bezkoder.springjwt.models.User;
 import com.bezkoder.springjwt.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import com.bezkoder.springjwt.groups.GroupRepository;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
@@ -148,17 +149,25 @@ public class GroupService {
                 .orElseThrow(() -> new RuntimeException("Not a group member"));
 
         // 🔴 Prevent last admin from leaving
+
+        groupMemberRepository.deleteById(member.getId());
         if (member.getRole().equals("ADMIN")) {
 
             long adminCount = groupMemberRepository
                     .countByGroupIdAndRole(groupId, "ADMIN");
 
-            if (adminCount == 1) {
-                throw new RuntimeException("Cannot leave as last admin");
+            if (adminCount == 0) {
+                List<GroupMember> remainingMembers = groupMemberRepository.findByGroupIdOrderByJoinedAtAsc(groupId);
+                if(remainingMembers.isEmpty()){
+                    return;
+                }else{
+                    GroupMember newAdmin = remainingMembers.get(0);
+                    newAdmin.setRole("ADMIN");
+                    groupMemberRepository.save(newAdmin);
+                }
             }
         }
 
-        groupMemberRepository.delete(member);
     }
 
     
