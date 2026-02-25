@@ -188,5 +188,49 @@ public class GroupService {
         groupMemberRepository.delete(targetMember);   
     }
 
+    public void promoteAsAdmin(Long groupId, String adminUsername, Long memberId){
+        User admin = userRepository.findByUsername(adminUsername)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        GroupMember adminMember = groupMemberRepository.findByGroupIdAndUserId(groupId, admin.getId())
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        if (!adminMember.getRole().equals("ADMIN")) {
+            throw new RuntimeException("Only ADMIN can promote members");
+        }
+
+        User member = userRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+        GroupMember targetMember = groupMemberRepository.findByGroupIdAndUserId(groupId,memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+        if(targetMember.getRole().equals("ADMIN")){
+            throw new RuntimeException("Member is already an admin");
+        }
+        if(adminUsername.equals(member.getUsername())){
+            throw new RuntimeException("Cannot promote yourself");
+        }
+        targetMember.setRole("ADMIN");
+        groupMemberRepository.save(targetMember);   
+    }
+    public void demoteAsMember(Long groupId, String adminUsername, Long memberId){
+        User admin = userRepository.findByUsername(adminUsername)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        GroupMember adminMember = groupMemberRepository.findByGroupIdAndUserId(groupId, admin.getId())
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+        if (!adminMember.getRole().equals("ADMIN")) {
+            throw new RuntimeException("Only ADMIN can demote members");
+        }
+        User member = userRepository.findById(memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+        GroupMember targetMember = groupMemberRepository.findByGroupIdAndUserId(groupId,memberId)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+        if(targetMember.getRole().equals("MEMBER")){
+            throw new RuntimeException("Member is already a member");
+        }
+        if(adminUsername.equals(member.getUsername())){
+            throw new RuntimeException("Cannot demote yourself");
+        }
+        targetMember.setRole("MEMBER");
+        groupMemberRepository.save(targetMember);   
+    }
+
     
 }

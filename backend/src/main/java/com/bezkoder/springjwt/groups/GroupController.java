@@ -66,5 +66,21 @@ public class GroupController {
     groupService.removeMember(groupId,authentication.getName(),memberId);
     return ResponseEntity.ok("Member removed successfully");
     }
+    @PutMapping("/{groupId}/promote/{memberId}")
+    public ResponseEntity<?> promoteAsAdmin(
+        @PathVariable Long groupId,
+        @PathVariable Long memberId,
+        Authentication authentication) {
+    groupService.promoteAsAdmin(groupId,authentication.getName(),memberId);
+    return ResponseEntity.ok("Member promoted to admin successfully");
+    }
+    @PutMapping("/{groupId}/demote/{memberId}")
+    public ResponseEntity<?> demoteAsMember(
+        @PathVariable Long groupId,
+        @PathVariable Long memberId,
+        Authentication authentication) {
+    groupService.demoteAsMember(groupId,authentication.getName(),memberId);
+    return ResponseEntity.ok("Member demoted to member successfully");
+    }
 
 }

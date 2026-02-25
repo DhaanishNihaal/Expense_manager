@@ -148,6 +148,28 @@ export default function GroupDetailsScreen() {
     }
   };
 
+  const handlePromoteMember = async (memberId: number) => {
+    try {
+      await api.put(`/api/groups/${id}/promote/${memberId}`);
+      Alert.alert("Success", "Member promoted to admin successfully");
+      fetchGroup();
+    } catch (e: any) {
+      const msg = e.response?.data || "Failed to promote member";
+      Alert.alert("Error", msg);
+    }
+  };
+
+  const handleDemoteMember = async (memberId: number) => {
+    try {
+      await api.put(`/api/groups/${id}/demote/${memberId}`);
+      Alert.alert("Success", "Admin demoted to member successfully");
+      fetchGroup();
+    } catch (e: any) {
+      const msg = e.response?.data || "Failed to demote member";
+      Alert.alert("Error", msg);
+    }
+  };
+
   const canDelete = (exp: Expense) => isGroupAdmin || currentUserId === exp.createdById;
 
   if (loading) return <Text>Loading...</Text>;
@@ -361,15 +383,27 @@ export default function GroupDetailsScreen() {
                   </View>
                   {openMemberMenuId === m.id && (
                     <View style={[styles.dropdownMenu, { top: 40, right: 10 }]}>
-                      <TouchableOpacity
-                        style={styles.dropdownMenuItem}
-                        onPress={() => {
-                          setOpenMemberMenuId(null);
-                          Alert.alert("Coming Soon", "Promote as admin feature will be available shortly.");
-                        }}
-                      >
-                        <Text style={styles.dropdownMenuText}>Promote as admin</Text>
-                      </TouchableOpacity>
+                      {m.role === "MEMBER" ? (
+                        <TouchableOpacity
+                          style={styles.dropdownMenuItem}
+                          onPress={() => {
+                            setOpenMemberMenuId(null);
+                            handlePromoteMember(m.id);
+                          }}
+                        >
+                          <Text style={styles.dropdownMenuText}>Promote as admin</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          style={styles.dropdownMenuItem}
+                          onPress={() => {
+                            setOpenMemberMenuId(null);
+                            handleDemoteMember(m.id);
+                          }}
+                        >
+                          <Text style={styles.dropdownMenuText}>Demote as member</Text>
+                        </TouchableOpacity>
+                      )}
                       <TouchableOpacity
                         style={styles.dropdownMenuItem}
                         onPress={() => {

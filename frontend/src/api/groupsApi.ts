@@ -15,3 +15,13 @@ export const createGroup = async (name: string, description: string) => {
   const res = await api.post("/api/groups", { name, description });
   return res.data;
 };
+
+export const promoteAsAdmin = async (groupId: number, memberId: number) => {
+  const res = await api.put(`/api/groups/${groupId}/promote/${memberId}`);
+  return res.data;
+};
+
+export const demoteAsMember = async (groupId: number, memberId: number) => {
+  const res = await api.put(`/api/groups/${groupId}/demote/${memberId}`);
+  return res.data;
+};
