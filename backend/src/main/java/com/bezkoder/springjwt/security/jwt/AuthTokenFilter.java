@@ -25,7 +25,8 @@ protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getServletPath();
 
     return path.startsWith("/api/auth/")
-        || path.equals("/error");
+        || path.equals("/error")
+        || path.startsWith("/ws");
 }
 
 

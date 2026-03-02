@@ -37,9 +37,9 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="settlements"
+        name="messages"
         options={{
-          title: "Settlements",
+          title: "Messages",
           tabBarIcon: ({ focused }) => (
             <TabIcon emoji="" focused={focused} />
           ),

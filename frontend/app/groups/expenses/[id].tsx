@@ -11,8 +11,8 @@ import {
   Platform,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { useEffect, useState } from "react";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState, useCallback } from "react";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 
 import { fetchExpenseTransactions, addExpenseTransaction, deletePayment } from "@/src/api/transactionApi";
 import { fetchExpenseSettlements, Settlement } from "@/src/api/settlementApi";
@@ -43,11 +43,13 @@ export default function ExpenseTransactionsScreen() {
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [settlements, setSettlements] = useState<Settlement[]>([]);
 
-  useEffect(() => {
-    getCurrentUserId();
-    loadTransactions();
-    loadSettlements();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      getCurrentUserId();
+      loadTransactions();
+      loadSettlements();
+    }, [id])
+  );
 
   const getCurrentUserId = async () => {
     try {

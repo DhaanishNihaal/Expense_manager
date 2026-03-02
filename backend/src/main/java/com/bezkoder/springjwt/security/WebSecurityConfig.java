@@ -100,6 +100,7 @@ public class WebSecurityConfig { // extends WebSecurityConfigurerAdapter {
           auth.requestMatchers("/api/auth/**").permitAll()
               .requestMatchers("/api/test/**").permitAll()
               .requestMatchers("/error").permitAll() 
+              .requestMatchers("/ws/**").permitAll() 
               
               .anyRequest().authenticated()
         );
@@ -128,4 +129,9 @@ public CorsConfigurationSource corsConfigurationSource() {
 
     return source;
 }
+
+  @Bean
+  public org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer webSecurityCustomizer() {
+    return (web) -> web.ignoring().requestMatchers("/ws/**", "/ws");
+  }
 }

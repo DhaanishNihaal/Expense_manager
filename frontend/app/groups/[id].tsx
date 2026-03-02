@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, Alert, Platform, ActivityIndicator, ScrollView } from "react-native";
-import { useEffect, useRef, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { useLocalSearchParams, useFocusEffect } from "expo-router";
 import { fetchExpensesByGroup, addExpense, deleteExpense } from "../../src/api/expenseApi";
 import { fetchGroupSettlements, Settlement } from "../../src/api/settlementApi";
 import { Expense } from "../../src/types/expense";
@@ -37,14 +37,19 @@ export default function GroupDetailsScreen() {
   const [leaving, setLeaving] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    getCurrentUser();
-    fetchExpensesByGroup(Number(id)).then(setExpenses);
-    loadSettlements();
-    loadTotalSpent();
-  }, [id]);
-
-  useEffect(() => { if (id && currentUserId) fetchGroup(); }, [id, currentUserId]);
+  useFocusEffect(
+    useCallback(() => {
+      getCurrentUser();
+      if (id) {
+        const groupId = Number(id);
+        fetchExpensesByGroup(groupId).then(setExpenses);
+        loadSettlements();
+        loadTotalSpent();
+        loadInvites();
+        if (currentUserId) fetchGroup();
+      }
+    }, [id, currentUserId])
+  );
 
   const getCurrentUser = async () => {
     try {
@@ -193,7 +198,7 @@ export default function GroupDetailsScreen() {
       <Text style={styles.sectionTitle}>Expenses</Text>
       {expenses.length === 0 && <Text style={styles.emptyText}>No expenses yet.</Text>}
       {expenses.map(exp => (
-        <View key={exp.id} style={{ position: "relative", marginBottom: 10 }}>
+        <View key={exp.id} style={{ position: "relative", marginBottom: 10, zIndex: openMenuId === exp.id ? 10 : 1 }}>
           <TouchableOpacity style={styles.expenseCard} onPress={() => router.push(`/groups/expenses/${exp.id}?groupId=${id}`)}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
               <View style={{ flex: 1 }}>
@@ -363,7 +368,7 @@ export default function GroupDetailsScreen() {
             <Text style={styles.membersLabel}>Members</Text>
             <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
               {group.members.map(m => (
-                <View key={m.id} style={{ position: "relative" }}>
+                <View key={m.id} style={{ position: "relative", zIndex: openMemberMenuId === m.id ? 10 : 1 }}>
                   <View style={styles.memberRow}>
                     <View style={styles.memberAvatar}>
                       <Text style={styles.memberAvatarText}>{m.name.charAt(0).toUpperCase()}</Text>
