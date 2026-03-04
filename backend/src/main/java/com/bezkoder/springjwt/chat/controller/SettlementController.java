@@ -17,6 +17,7 @@ public class SettlementController {
     public void acceptSettlement(@PathVariable UUID messageId) {
         settlementService.acceptSettlement(messageId);
     }
+    
 
     
 }

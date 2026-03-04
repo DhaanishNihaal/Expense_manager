@@ -92,14 +92,27 @@ public class ChatService {
             }
 
             Long unreadCount = messageRepository.countUnread(chat.getId(), userId);
-
+            
+            // Get other user ID for online status
+            Long otherUserId = null;
+            if (chat.getType() == ChatType.PRIVATE) {
+                List<ChatMember> allMembers = chatMemberRepository.findByChatId(chat.getId());
+                otherUserId = allMembers.stream()
+                        .map(ChatMember::getUser)
+                        .filter(u -> !u.getId().equals(userId))
+                        .map(User::getId)
+                        .findFirst()
+                        .orElse(null);
+            }
+            
             return new ChatSummaryDTO(
                     chat.getId(),
                     chat.getType().name(),
                     displayName,
                     lastMessage,
                     lastTime,
-                    unreadCount
+                    unreadCount,
+                    otherUserId // Include other user ID
             );
         })
         .sorted((c1, c2) -> {
@@ -124,5 +137,11 @@ public class ChatService {
 
     public List<Message> getChatMessages(UUID chatId) {
         return messageRepository.findAllByChatIdOrderByTimestampAsc(chatId);
+    }
+
+    public UUID getGroupChatId(Long groupId) {
+        return chatRepository.findByGroupId(groupId)
+                .map(Chat::getId)
+                .orElseThrow(() -> new RuntimeException("Group chat not found"));
     }
 }

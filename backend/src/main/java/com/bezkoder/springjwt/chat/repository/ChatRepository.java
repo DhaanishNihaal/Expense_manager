@@ -21,4 +21,6 @@ public interface ChatRepository extends JpaRepository<Chat, UUID> {
             @Param("user1") Long user1,
             @Param("user2") Long user2
     );
+
+    Optional<Chat> findByGroupId(Long groupId);
 }

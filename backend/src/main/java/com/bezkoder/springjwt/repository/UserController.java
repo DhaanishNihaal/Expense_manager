@@ -2,6 +2,7 @@ package com.bezkoder.springjwt.repository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -15,6 +16,19 @@ public class UserController {
     public UserController(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
+    
+    @GetMapping("/users/{userId}")
+    public UserSearchResponse getUserInfo(@PathVariable Long userId) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        return new UserSearchResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getName()
+        );
+    }
+    
     @GetMapping("/users/search")
     public List<UserSearchResponse> searchUsers(
             @RequestParam String keyword,

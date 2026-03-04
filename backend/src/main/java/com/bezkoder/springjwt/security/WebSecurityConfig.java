@@ -100,8 +100,8 @@ public class WebSecurityConfig { // extends WebSecurityConfigurerAdapter {
           auth.requestMatchers("/api/auth/**").permitAll()
               .requestMatchers("/api/test/**").permitAll()
               .requestMatchers("/error").permitAll() 
-              .requestMatchers("/ws/**").permitAll() 
-              
+              .requestMatchers("/ws/**").permitAll()
+              .requestMatchers("/ws").permitAll() // Add explicit WebSocket endpoint
               .anyRequest().authenticated()
         );
     
@@ -115,14 +115,17 @@ public class WebSecurityConfig { // extends WebSecurityConfigurerAdapter {
 public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
 
-    config.setAllowedOrigins(List.of(
-        "http://localhost:8081", // Expo web
-        "http://localhost:19006" // Expo older web
+    config.setAllowedOriginPatterns(List.of(
+        "http://localhost:*", // Allow all localhost ports
+        "http://127.0.0.1:*", // Allow all 127.0.0.1 ports
+        "exp://*:*" // Allow all Expo Go URLs
     ));
 
-    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
     config.setAllowedHeaders(List.of("*"));
+    config.setExposedHeaders(List.of("Authorization", "Content-Type"));
     config.setAllowCredentials(true);
+    config.setMaxAge(3600L); // Cache preflight for 1 hour
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", config);

@@ -8,15 +8,131 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     Image,
+    Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import userApi, { UserSearchResponse } from "../../src/api/userApi";
 import chatApi, { ChatSummary } from "../../src/api/chatApi";
+import { useMessages } from "../../src/contexts/MessageContext";
+import { useWebSocket } from "../../src/contexts/WebSocketContext";
 import { debounce } from "lodash";
 import { useFocusEffect } from "expo-router";
 
+// Instagram-style animated typing dots component
+const AnimatedTypingDots = () => {
+    const dot1Anim = React.useRef(new Animated.Value(0)).current;
+    const dot2Anim = React.useRef(new Animated.Value(0)).current;
+    const dot3Anim = React.useRef(new Animated.Value(0)).current;
+
+    React.useEffect(() => {
+        // Create individual animations for each dot
+        const dot1Animation = Animated.loop(
+            Animated.sequence([
+                Animated.timing(dot1Anim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(dot1Anim, {
+                    toValue: 0,
+                    duration: 400,
+                    useNativeDriver: true,
+                })
+            ])
+        );
+
+        const dot2Animation = Animated.loop(
+            Animated.sequence([
+                Animated.delay(200),
+                Animated.timing(dot2Anim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(dot2Anim, {
+                    toValue: 0,
+                    duration: 400,
+                    useNativeDriver: true,
+                })
+            ])
+        );
+
+        const dot3Animation = Animated.loop(
+            Animated.sequence([
+                Animated.delay(400),
+                Animated.timing(dot3Anim, {
+                    toValue: 1,
+                    duration: 400,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(dot3Anim, {
+                    toValue: 0,
+                    duration: 400,
+                    useNativeDriver: true,
+                })
+            ])
+        );
+
+        // Start all animations
+        dot1Animation.start();
+        dot2Animation.start();
+        dot3Animation.start();
+
+        // Cleanup function
+        return () => {
+            dot1Animation.stop();
+            dot2Animation.stop();
+            dot3Animation.stop();
+        };
+    }, []);
+
+    const dotScale = (anim: Animated.Value) => anim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [1, 1.5],
+    });
+
+    const dotOpacity = (anim: Animated.Value) => anim.interpolate({
+        inputRange: [0, 0.5, 1],
+        outputRange: [0.3, 1, 0.3],
+    });
+
+    return (
+        <View style={styles.typingDotsContainer}>
+            <Animated.View
+                style={[
+                    styles.typingDot,
+                    {
+                        transform: [{ scale: dotScale(dot1Anim) }],
+                        opacity: dotOpacity(dot1Anim),
+                    },
+                ]}
+            />
+            <Animated.View
+                style={[
+                    styles.typingDot,
+                    {
+                        transform: [{ scale: dotScale(dot2Anim) }],
+                        opacity: dotOpacity(dot2Anim),
+                    },
+                ]}
+            />
+            <Animated.View
+                style={[
+                    styles.typingDot,
+                    {
+                        transform: [{ scale: dotScale(dot3Anim) }],
+                        opacity: dotOpacity(dot3Anim),
+                    },
+                ]}
+            />
+        </View>
+    );
+};
+
 export default function MessagesScreen() {
     const router = useRouter();
+    const { stompClient, connectionStatus } = useWebSocket();
+    const { unreadCounts, typingUsers, onlineUsers } = useMessages();
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<UserSearchResponse[]>([]);
     const [myChats, setMyChats] = useState<ChatSummary[]>([]);
@@ -29,7 +145,7 @@ export default function MessagesScreen() {
         }, [])
     );
 
-    const fetchMyChats = async () => {
+    const fetchMyChats = useCallback(async () => {
         try {
             setLoading(true);
             const response = await chatApi.getMyChats();
@@ -39,6 +155,35 @@ export default function MessagesScreen() {
         } finally {
             setLoading(false);
         }
+    }, []);
+
+    // Listen for live messages and update chat list
+    useEffect(() => {
+        if (!stompClient || connectionStatus !== 'connected') return;
+
+        const subscription = stompClient.subscribe('/topic/messages', (message) => {
+            try {
+                const newMessage = JSON.parse(message.body);
+                console.log('New message received in messages screen:', newMessage);
+                
+                // Refresh chat list to show latest message and update unread count
+                fetchMyChats();
+            } catch (error) {
+                console.error('Error parsing message in messages screen:', error);
+            }
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [stompClient, connectionStatus, fetchMyChats]);
+
+    const getOtherUserId = (chatSummary: ChatSummary): number | null => {
+        return chatSummary.otherUserId || null;
+    };
+
+    const openChat = (chatId: string) => {
+        router.push(`/chat/${chatId}`);
     };
 
     const handleSearch = useCallback(
@@ -80,33 +225,64 @@ export default function MessagesScreen() {
         }
     };
 
-    const openChat = (chatId: string) => {
-        router.push(`/chat/${chatId}`);
-    };
-
-    const renderChatItem = ({ item }: { item: ChatSummary }) => (
-        <TouchableOpacity style={styles.chatItem} onPress={() => openChat(item.chatId)}>
-            <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>{item.displayName.charAt(0).toUpperCase()}</Text>
-            </View>
-            <View style={styles.chatInfo}>
-                <Text style={styles.chatName}>{item.displayName}</Text>
-                <Text style={styles.lastMessage} numberOfLines={1}>
-                    {item.lastMessage || "No messages yet"}
-                </Text>
-            </View>
-            {item.lastMessageTime ? (
-                <Text style={styles.chatTime}>
-                    {new Date(item.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-            ) : null}
-            {item.unreadCount > 0 ? (
-                <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadText}>{item.unreadCount}</Text>
+    const renderChatItem = ({ item }: { item: ChatSummary }) => {
+        const isTyping = typingUsers[item.chatId] ? true : false;
+        const isUserOnline = getOtherUserId(item) ? onlineUsers.has(getOtherUserId(item)!) : false;
+        
+        return (
+            <TouchableOpacity style={styles.chatItem} onPress={() => openChat(item.chatId)}>
+                <View style={styles.avatarContainer}>
+                    <View style={styles.avatarPlaceholder}>
+                        <Text style={styles.avatarText}>{item.displayName.charAt(0).toUpperCase()}</Text>
+                        {isUserOnline && (
+                            <View style={styles.onlineDot} />
+                        )}
+                    </View>
+                    <View style={styles.typingContainer}>
+                        {isTyping && (
+                            <View style={styles.typingIndicator}>
+                                <AnimatedTypingDots />
+                            </View>
+                        )}
+                    </View>
                 </View>
-            ) : null}
-        </TouchableOpacity>
-    );
+                <View style={styles.chatInfo}>
+                    <View style={styles.chatNameContainer}>
+                        <Text style={styles.chatName}>{item.displayName}</Text>
+                        {isUserOnline && (
+                            <View style={styles.onlineStatusContainer}>
+                                <View style={styles.onlineStatusDot} />
+                                <Text style={styles.onlineStatusText}>Online</Text>
+                            </View>
+                        )}
+                    </View>
+                    <Text style={styles.lastMessage} numberOfLines={1}>
+                        {isTyping ? (
+                            <View style={styles.typingTextContainer}>
+                                <Text style={styles.typingText}>typing</Text>
+                                <AnimatedTypingDots />
+                            </View>
+                        ) : (item.lastMessage || "No messages yet")}
+                    </Text>
+                </View>
+                <View style={styles.rightContainer}>
+                    {item.lastMessageTime ? (
+                        <Text style={styles.chatTime}>
+                            {new Date(item.lastMessageTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </Text>
+                    ) : null}
+                    {/* Use global unread count if available, otherwise use API count */}
+                    {(unreadCounts[item.chatId] || item.unreadCount) > 0 ? (
+                        <View style={styles.unreadBadge}>
+                            <Text style={styles.unreadText}>
+                                {unreadCounts[item.chatId] || item.unreadCount}
+                            </Text>
+                        </View>
+                    ) : null}
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     const renderSearchResult = ({ item }: { item: UserSearchResponse }) => (
         <TouchableOpacity style={styles.searchResultItem} onPress={() => startChat(item.id)}>
@@ -124,6 +300,17 @@ export default function MessagesScreen() {
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Messages</Text>
+                <View style={styles.statusContainer}>
+                    <View style={[
+                        styles.statusDot, 
+                        connectionStatus === 'connected' ? styles.statusOnline : 
+                        connectionStatus === 'connecting' ? styles.statusConnecting : styles.statusOffline
+                    ]} />
+                    <Text style={styles.statusText}>
+                        {connectionStatus === 'connected' ? '' : 
+                         connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}
+                    </Text>
+                </View>
             </View>
 
             <View style={styles.searchBarContainer}>
@@ -181,11 +368,38 @@ const styles = StyleSheet.create({
         paddingTop: 60,
         paddingHorizontal: 20,
         paddingBottom: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
     title: {
         fontSize: 32,
         fontWeight: "bold",
         color: "#000000",
+    },
+    statusContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    statusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 6,
+    },
+    statusOnline: {
+        backgroundColor: "#4CD964",
+    },
+    statusConnecting: {
+        backgroundColor: "#FF9500",
+    },
+    statusOffline: {
+        backgroundColor: "#FF3B30",
+    },
+    statusText: {
+        fontSize: 12,
+        color: "#8E8E93",
+        fontWeight: "500",
     },
     searchBarContainer: {
         flexDirection: "row",
@@ -216,6 +430,10 @@ const styles = StyleSheet.create({
         borderBottomWidth: 0.5,
         borderBottomColor: "#E5E5EA",
     },
+    avatarContainer: {
+        position: 'relative',
+        marginRight: 15,
+    },
     avatarPlaceholder: {
         width: 56,
         height: 56,
@@ -223,7 +441,55 @@ const styles = StyleSheet.create({
         backgroundColor: "#E5E5EA",
         justifyContent: "center",
         alignItems: "center",
-        marginRight: 15,
+    },
+    onlineDot: {
+        position: 'absolute',
+        bottom: 2,
+        right: 2,
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: "#4CD964",
+        borderWidth: 2,
+        borderColor: "#FFFFFF",
+    },
+    typingContainer: {
+        position: 'absolute',
+        bottom: -8,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+    },
+    typingIndicator: {
+        backgroundColor: "#F2F2F7",
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: "#E5E5EA",
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    typingText: {
+        fontSize: 10,
+        color: "#8E8E93",
+        fontStyle: 'italic',
+    },
+    typingTextContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    typingDotsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginLeft: 4,
+    },
+    typingDot: {
+        width: 4,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: "#8E8E93",
+        marginHorizontal: 1,
     },
     avatarText: {
         fontSize: 22,
@@ -233,11 +499,42 @@ const styles = StyleSheet.create({
     chatInfo: {
         flex: 1,
     },
+    chatNameContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 4,
+    },
     chatName: {
         fontSize: 17,
         fontWeight: "600",
         color: "#000000",
-        marginBottom: 4,
+        flex: 1,
+    },
+    onlineStatusContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#E8F5E8',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    onlineStatusDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: "#4CD964",
+        marginRight: 4,
+    },
+    onlineStatusText: {
+        fontSize: 10,
+        color: "#4CD964",
+        fontWeight: "500",
+    },
+    rightContainer: {
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        minWidth: 50,
     },
     lastMessage: {
         fontSize: 14,

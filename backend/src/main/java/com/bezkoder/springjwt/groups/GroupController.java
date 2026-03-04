@@ -21,7 +21,7 @@ public class GroupController {
     }
 
     @PostMapping
-    public Group createGroup(@RequestBody CreateGroupRequest request,
+    public GroupResponse createGroup(@RequestBody CreateGroupRequest request,
                              Authentication authentication) {
 
         String username = authentication.getName();

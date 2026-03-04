@@ -6,6 +6,7 @@ import { fetchGroupSettlements, Settlement } from "../../src/api/settlementApi";
 import { Expense } from "../../src/types/expense";
 import { router } from "expo-router";
 import api from "../../src/api/api";
+import chatApi from "../../src/api/chatApi";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Member = { id: number; name: string; role: string };
@@ -174,6 +175,17 @@ export default function GroupDetailsScreen() {
       Alert.alert("Error", msg);
     }
   };
+  
+  const handleGoToChat = async () => {
+    try {
+      const response = await chatApi.getGroupChatId(Number(id));
+      const chatId = response.data;
+      router.push(`/chat/${chatId}`);
+    } catch (error) {
+      console.error("Error fetching group chat ID:", error);
+      Alert.alert("Error", "Could not open group chat");
+    }
+  };
 
   const canDelete = (exp: Expense) => isGroupAdmin || currentUserId === exp.createdById;
 
@@ -191,6 +203,9 @@ export default function GroupDetailsScreen() {
         <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowGroupInfo(true)} activeOpacity={0.75}>
           <Text style={styles.title}>{group.name}</Text>
           <Text style={styles.subtitle}>{group.members.length} members · tap for info ›</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleGoToChat} style={styles.chatHeaderButton}>
+          <Text style={styles.chatHeaderIcon}>💬</Text>
         </TouchableOpacity>
       </View>
 
@@ -486,6 +501,8 @@ const styles = StyleSheet.create({
   backIcon: { fontSize: 22, color: "#007AFF" },
   title: { fontSize: 24, fontWeight: "bold", color: "#1A1A1A" },
   subtitle: { color: "#007AFF", fontSize: 13, marginTop: 2 },
+  chatHeaderButton: { padding: 8, backgroundColor: "#fff", borderRadius: 20, borderWidth: 1, borderColor: "#E5E5EA", shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+  chatHeaderIcon: { fontSize: 18 },
   sectionTitle: { fontSize: 17, fontWeight: "700", color: "#1A1A1A", marginTop: 20, marginBottom: 6 },
   emptyText: { color: "#999", fontSize: 14, marginBottom: 8 },
   expenseCard: { backgroundColor: "#fff", padding: 14, borderRadius: 10, borderWidth: 1, borderColor: "#E5E5EA" },

@@ -10,6 +10,9 @@ import com.bezkoder.springjwt.groups.GroupMember;
 import com.bezkoder.springjwt.groups.GroupMemberRepository;
 import com.bezkoder.springjwt.repository.UserRepository;
 import com.bezkoder.springjwt.models.User;
+import com.bezkoder.springjwt.chat.repository.ChatRepository;
+import com.bezkoder.springjwt.chat.repository.ChatMemberRepository;
+import com.bezkoder.springjwt.chat.entity.ChatMember;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,15 +23,21 @@ public class GroupInviteService {
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final ChatRepository chatRepository;
+    private final ChatMemberRepository chatMemberRepository;
 
     public GroupInviteService(GroupInviteRepository inviteRepository,
                               GroupRepository groupRepository,
                               UserRepository userRepository,
-                              GroupMemberRepository groupMemberRepository) {
+                              GroupMemberRepository groupMemberRepository,
+                              ChatRepository chatRepository,
+                              ChatMemberRepository chatMemberRepository) {
         this.inviteRepository = inviteRepository;
         this.groupRepository = groupRepository;
         this.userRepository = userRepository;
         this.groupMemberRepository = groupMemberRepository;
+        this.chatRepository = chatRepository;
+        this.chatMemberRepository = chatMemberRepository;
     }
 
     // 🔹 Send Invite
@@ -145,6 +154,14 @@ public class GroupInviteService {
 
         groupMemberRepository.save(member);
         inviteRepository.save(invite);
+
+        // --- Sync with Chat ---
+        chatRepository.findByGroupId(invite.getGroup().getId()).ifPresent(chat -> {
+            ChatMember cm = new ChatMember();
+            cm.setChat(chat);
+            cm.setUser(invite.getInvitedUser());
+            chatMemberRepository.save(cm);
+        });
 
         // 🧹 Clean up all other duplicate invite rows for this group+user
         List<GroupInvite> allInvites = inviteRepository

@@ -2,6 +2,8 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { WebSocketProvider } from "../src/contexts/WebSocketContext";
+import { MessageProvider } from "../src/contexts/MessageContext";
 
 export default function RootLayout() {
   const router = useRouter();
@@ -42,5 +44,11 @@ export default function RootLayout() {
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <WebSocketProvider>
+      <MessageProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </MessageProvider>
+    </WebSocketProvider>
+  );
 }

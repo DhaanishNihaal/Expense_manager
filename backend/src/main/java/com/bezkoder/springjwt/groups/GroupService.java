@@ -4,6 +4,13 @@ import com.bezkoder.springjwt.groups.dto.CreateGroupRequest;
 import com.bezkoder.springjwt.groups.dto.GroupResponse;
 import com.bezkoder.springjwt.models.User;
 import com.bezkoder.springjwt.repository.UserRepository;
+import com.bezkoder.springjwt.chat.entity.Chat;
+import com.bezkoder.springjwt.chat.entity.ChatMember;
+import com.bezkoder.springjwt.chat.entity.ChatType;
+import com.bezkoder.springjwt.chat.repository.ChatRepository;
+import com.bezkoder.springjwt.chat.repository.ChatMemberRepository;
+import com.bezkoder.springjwt.chat.entity.Message;
+import com.bezkoder.springjwt.chat.repository.MessageRepository;
 import org.springframework.stereotype.Service;
 import com.bezkoder.springjwt.groups.GroupRepository;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,18 +26,26 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
+    private final ChatRepository chatRepository;
+    private final ChatMemberRepository chatMemberRepository;
+    private final MessageRepository messageRepository;
 
     public GroupService(GroupRepository groupRepository,
                         GroupMemberRepository groupMemberRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        ChatRepository chatRepository,
+                        ChatMemberRepository chatMemberRepository,
+                        MessageRepository messageRepository) {
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.userRepository = userRepository;
+        this.chatRepository = chatRepository;
+        this.chatMemberRepository = chatMemberRepository;
+        this.messageRepository = messageRepository;
     }
 
     @Transactional
-    public Group createGroup(CreateGroupRequest request, String username) {
-
+    public GroupResponse createGroup(CreateGroupRequest request, String username) {
         User creator = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -48,7 +63,34 @@ public class GroupService {
 
         groupMemberRepository.save(member);
 
-        return savedGroup;
+        // --- Create chat for group ---
+        Chat chat = new Chat();
+        chat.setType(ChatType.GROUP);
+        chat.setGroup(savedGroup);
+        chatRepository.save(chat);
+
+        ChatMember cm = new ChatMember();
+        cm.setChat(chat);
+        cm.setUser(creator);
+        chatMemberRepository.save(cm);
+
+        // System message
+        Message systemMessage = new Message();
+        systemMessage.setChat(chat);
+        systemMessage.setType(com.bezkoder.springjwt.chat.entity.MessageType.SYSTEM);
+        systemMessage.setContent("Group chat created");
+        systemMessage.setTimestamp(java.time.LocalDateTime.now());
+        // Message also needs a sender for now due to entity layout, using creator as system sender
+        systemMessage.setSender(creator); 
+        messageRepository.save(systemMessage);
+
+        return new GroupResponse(
+            savedGroup.getId(),
+            savedGroup.getName(),
+            savedGroup.getDescription(),
+            savedGroup.getCreatedAt(),
+            1
+        );
     }
     @Transactional
     public void addMember(Long groupId, String adminUsername, String newUsername) {
@@ -80,6 +122,14 @@ public class GroupService {
         member.setRole("MEMBER");
 
         groupMemberRepository.save(member);
+
+        // Sync with Chat
+        chatRepository.findByGroupId(groupId).ifPresent(chat -> {
+            ChatMember cm = new ChatMember();
+            cm.setChat(chat);
+            cm.setUser(newUser);
+            chatMemberRepository.save(cm);
+        });
     }
     @Transactional(readOnly = true)
     public List<Group> getUserGroups(String username) {
@@ -168,6 +218,10 @@ public class GroupService {
             }
         }
 
+        // Sync with Chat
+        chatRepository.findByGroupId(groupId).ifPresent(chat -> {
+            chatMemberRepository.deleteByChatIdAndUserId(chat.getId(), user.getId());
+        });
     }
 
     public void removeMember(Long groupId, String adminUsername, Long memberId){
@@ -186,6 +240,11 @@ public class GroupService {
             throw new RuntimeException("Cannot remove yourself");
         }
         groupMemberRepository.delete(targetMember);   
+
+        // Sync with Chat
+        chatRepository.findByGroupId(groupId).ifPresent(chat -> {
+            chatMemberRepository.deleteByChatIdAndUserId(chat.getId(), memberId);
+        });
     }
 
     public void promoteAsAdmin(Long groupId, String adminUsername, Long memberId){

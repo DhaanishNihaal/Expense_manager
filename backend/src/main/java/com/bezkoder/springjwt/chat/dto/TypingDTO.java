@@ -6,4 +6,5 @@ import java.util.UUID;
 @Data
 public class TypingDTO {
     private UUID chatId;
+    private Long userId; // Add userId field
 }
