@@ -34,6 +34,10 @@ export const getUserInfo = (userId: number) => {
     return api.get<any>(`/api/users/${userId}`);
 };
 
+export const getChatInfo = (chatId: string) => {
+    return api.get<any>(`/api/chat/${chatId}/info`);
+};
+
 export const getChatParticipants = (chatId: string) => {
     return api.get<any>(`/api/chat/${chatId}/participants`);
 };
@@ -46,4 +50,5 @@ export default {
     getGroupChatId,
     getUserInfo,
     getChatParticipants,
+    getChatInfo,
 };

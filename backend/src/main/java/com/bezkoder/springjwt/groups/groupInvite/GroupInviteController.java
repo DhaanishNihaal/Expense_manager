@@ -53,6 +53,12 @@ public class GroupInviteController {
         return inviteService.getGroupInvites(groupId);
     }
 
+    // 🔹 Get Invite by ID
+    @GetMapping("/invites/{inviteId}")
+    public InviteResponse getInvite(@PathVariable Long inviteId) {
+        return inviteService.getInviteById(inviteId);
+    }
+
     // 🔹 Accept
     @PostMapping("/invites/{inviteId}/accept")
     public ResponseEntity<?> acceptInvite(@PathVariable Long inviteId,

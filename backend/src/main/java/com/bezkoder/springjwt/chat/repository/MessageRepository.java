@@ -17,6 +17,7 @@ import org.springframework.data.repository.query.Param;
 public interface MessageRepository extends JpaRepository<Message, UUID> {
     Optional<Message> findTopByChatIdOrderByTimestampDesc(UUID chatId);
     List<Message> findAllByChatIdOrderByTimestampAsc(UUID chatId);
+    Optional<Message> findByChatIdAndInviteId(UUID chatId, Long inviteId);
 
     @Modifying
     @Query("UPDATE Message m SET m.isRead = true WHERE m.chat.id = :chatId AND m.sender.id <> :userId AND m.isRead = false")

@@ -37,4 +37,14 @@ public class Message {
     private boolean isRead = false;
 
     private LocalDateTime timestamp = LocalDateTime.now();
+
+    // Invitation metadata
+    @Column(name = "invite_id")
+    private Long inviteId;
+
+    @Column(name = "invitation_status")
+    private String invitationStatus; // PENDING, ACCEPTED, REJECTED
+
+    @Column(name = "group_id")
+    private Long groupId; // For resend functionality
 }

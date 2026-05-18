@@ -74,13 +74,12 @@ public class GroupService {
         cm.setUser(creator);
         chatMemberRepository.save(cm);
 
-        // System message
+        // System message for group creation
         Message systemMessage = new Message();
         systemMessage.setChat(chat);
         systemMessage.setType(com.bezkoder.springjwt.chat.entity.MessageType.SYSTEM);
-        systemMessage.setContent("Group chat created");
+        systemMessage.setContent(creator.getName() + " created the group");
         systemMessage.setTimestamp(java.time.LocalDateTime.now());
-        // Message also needs a sender for now due to entity layout, using creator as system sender
         systemMessage.setSender(creator); 
         messageRepository.save(systemMessage);
 
@@ -123,12 +122,21 @@ public class GroupService {
 
         groupMemberRepository.save(member);
 
-        // Sync with Chat
+        // Sync with Chat and add system message
         chatRepository.findByGroupId(groupId).ifPresent(chat -> {
             ChatMember cm = new ChatMember();
             cm.setChat(chat);
             cm.setUser(newUser);
             chatMemberRepository.save(cm);
+            
+            // System message for adding member
+            Message systemMessage = new Message();
+            systemMessage.setChat(chat);
+            systemMessage.setType(com.bezkoder.springjwt.chat.entity.MessageType.SYSTEM);
+            systemMessage.setContent(admin.getName() + " added " + newUser.getName());
+            systemMessage.setTimestamp(java.time.LocalDateTime.now());
+            systemMessage.setSender(admin);
+            messageRepository.save(systemMessage);
         });
     }
     @Transactional(readOnly = true)
@@ -218,9 +226,18 @@ public class GroupService {
             }
         }
 
-        // Sync with Chat
+        // Sync with Chat and add system message
         chatRepository.findByGroupId(groupId).ifPresent(chat -> {
             chatMemberRepository.deleteByChatIdAndUserId(chat.getId(), user.getId());
+            
+            // System message for leaving group
+            Message systemMessage = new Message();
+            systemMessage.setChat(chat);
+            systemMessage.setType(com.bezkoder.springjwt.chat.entity.MessageType.SYSTEM);
+            systemMessage.setContent(user.getName() + " left the group");
+            systemMessage.setTimestamp(java.time.LocalDateTime.now());
+            systemMessage.setSender(user);
+            messageRepository.save(systemMessage);
         });
     }
 
@@ -241,9 +258,18 @@ public class GroupService {
         }
         groupMemberRepository.delete(targetMember);   
 
-        // Sync with Chat
+        // Sync with Chat and add system message
         chatRepository.findByGroupId(groupId).ifPresent(chat -> {
             chatMemberRepository.deleteByChatIdAndUserId(chat.getId(), memberId);
+            
+            // System message for removing member
+            Message systemMessage = new Message();
+            systemMessage.setChat(chat);
+            systemMessage.setType(com.bezkoder.springjwt.chat.entity.MessageType.SYSTEM);
+            systemMessage.setContent(admin.getName() + " removed " + member.getName());
+            systemMessage.setTimestamp(java.time.LocalDateTime.now());
+            systemMessage.setSender(admin);
+            messageRepository.save(systemMessage);
         });
     }
 
@@ -267,7 +293,18 @@ public class GroupService {
             throw new RuntimeException("Cannot promote yourself");
         }
         targetMember.setRole("ADMIN");
-        groupMemberRepository.save(targetMember);   
+        groupMemberRepository.save(targetMember);
+        
+        // Add system message for promotion
+        chatRepository.findByGroupId(groupId).ifPresent(chat -> {
+            Message systemMessage = new Message();
+            systemMessage.setChat(chat);
+            systemMessage.setType(com.bezkoder.springjwt.chat.entity.MessageType.SYSTEM);
+            systemMessage.setContent(admin.getName() + " made " + member.getName() + " an admin");
+            systemMessage.setTimestamp(java.time.LocalDateTime.now());
+            systemMessage.setSender(admin);
+            messageRepository.save(systemMessage);
+        });   
     }
     public void demoteAsMember(Long groupId, String adminUsername, Long memberId){
         User admin = userRepository.findByUsername(adminUsername)
@@ -288,7 +325,18 @@ public class GroupService {
             throw new RuntimeException("Cannot demote yourself");
         }
         targetMember.setRole("MEMBER");
-        groupMemberRepository.save(targetMember);   
+        groupMemberRepository.save(targetMember);
+        
+        // Add system message for demotion
+        chatRepository.findByGroupId(groupId).ifPresent(chat -> {
+            Message systemMessage = new Message();
+            systemMessage.setChat(chat);
+            systemMessage.setType(com.bezkoder.springjwt.chat.entity.MessageType.SYSTEM);
+            systemMessage.setContent(admin.getName() + " demoted " + member.getName() + " to member");
+            systemMessage.setTimestamp(java.time.LocalDateTime.now());
+            systemMessage.setSender(admin);
+            messageRepository.save(systemMessage);
+        });   
     }
 
     

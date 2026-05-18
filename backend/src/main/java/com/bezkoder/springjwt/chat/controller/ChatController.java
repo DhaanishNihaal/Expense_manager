@@ -4,15 +4,20 @@ import com.bezkoder.springjwt.chat.dto.ChatSummaryDTO;
 import com.bezkoder.springjwt.chat.service.ChatService;
 import com.bezkoder.springjwt.security.services.UserDetailsImpl;
 import com.bezkoder.springjwt.repository.UserSearchResponse;
-import com.bezkoder.springjwt.chat.entity.User;
+import com.bezkoder.springjwt.models.User;
 import com.bezkoder.springjwt.chat.entity.ChatMember;
+import com.bezkoder.springjwt.chat.entity.Chat;
+import com.bezkoder.springjwt.chat.entity.ChatType;
 import com.bezkoder.springjwt.chat.repository.ChatMemberRepository;
+import com.bezkoder.springjwt.chat.repository.ChatRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 
 @RestController
@@ -22,6 +27,7 @@ public class ChatController {
 
     private final ChatService chatService;
     private final ChatMemberRepository chatMemberRepository;
+    private final ChatRepository chatRepository;
 
     @PostMapping("/private/{otherUserId}")
     public UUID createPrivateChat(
@@ -42,6 +48,36 @@ public class ChatController {
     @GetMapping("/{chatId}/messages")
     public List<com.bezkoder.springjwt.chat.entity.Message> getChatMessages(@PathVariable UUID chatId) {
         return chatService.getChatMessages(chatId);
+    }
+
+    @GetMapping("/{chatId}/info")
+    public ResponseEntity<Map<String, Object>> getChatInfo(@PathVariable String chatId, Authentication auth) {
+        try {
+            UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+            Long currentUserId = userDetails.getId();
+            
+            UUID chatUuid = UUID.fromString(chatId);
+            Chat chat = chatRepository.findById(chatUuid)
+                    .orElseThrow(() -> new RuntimeException("Chat not found"));
+            
+            // Check if user is a member of this chat
+            boolean isMember = chatMemberRepository.existsByChatIdAndUserId(chatUuid, currentUserId);
+            if (!isMember) {
+                return ResponseEntity.status(403).build();
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("type", chat.getType().toString());
+            
+            if (chat.getType() == ChatType.GROUP && chat.getGroup() != null) {
+                response.put("groupName", chat.getGroup().getName());
+                response.put("groupId", chat.getGroup().getId());
+            }
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @GetMapping("/{chatId}/participants")

@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
     View,
     Text,
-    StyleSheet,
     TextInput,
-    FlatList,
     TouchableOpacity,
+    FlatList,
     KeyboardAvoidingView,
     Platform,
+    StyleSheet,
     ActivityIndicator,
     Animated,
 } from "react-native";
@@ -157,8 +157,11 @@ export default function ChatScreen() {
     );
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     const [isTyping, setIsTyping] = useState(false);
+    const [typingUser, setTypingUser] = useState<string | null>(null);
     const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
     const [otherUserName, setOtherUserName] = useState<string | null>(null);
+    const [isGroupChat, setIsGroupChat] = useState(false);
+    const [groupName, setGroupName] = useState<string | null>(null);
     const flatListRef = useRef<FlatList>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
@@ -176,13 +179,24 @@ export default function ChatScreen() {
     // Get other user info from multiple sources
     useEffect(() => {
         if (!otherUserId && currentChatId && currentUserId) {
-            const getOtherUserInfo = async () => {
+            const getChatInfo = async () => {
                 try {
-                    console.log('=== GETTING OTHER USER INFO ===');
+                    console.log('=== GETTING CHAT INFO ===');
                     console.log('Chat ID:', currentChatId);
                     console.log('Current User ID:', currentUserId);
                     
-                    // Method 1: Try participants API first
+                    // Get chat info to determine if it's a group chat
+                    const chatInfoResponse = await chatApi.getChatInfo(currentChatId);
+                    console.log('Chat info response:', chatInfoResponse.data);
+                    
+                    if (chatInfoResponse.data.type === 'GROUP') {
+                        setIsGroupChat(true);
+                        setGroupName(chatInfoResponse.data.groupName);
+                        console.log('✅ Detected group chat:', chatInfoResponse.data.groupName);
+                        return; // Don't try to get other user info for group chats
+                    }
+                    
+                    // For private chats, get other user info
                     try {
                         const participantsResponse = await chatApi.getChatParticipants(currentChatId);
                         console.log('Participants API response:', participantsResponse.data);
@@ -239,11 +253,11 @@ export default function ChatScreen() {
                     console.log('❌ Could not find other user info');
                     
                 } catch (error) {
-                    console.error('Error getting other user info:', error);
+                    console.error('Error getting chat info:', error);
                 }
             };
             
-            getOtherUserInfo();
+            getChatInfo();
         }
     }, [currentChatId, currentUserId]);
 
@@ -301,17 +315,51 @@ export default function ChatScreen() {
 
         const typingSubscription = stompClient.subscribe(
             `/topic/chat/${currentChatId}/typing`,
-            (message) => {
-                const typingUserId = Number(message.body);
-                if (typingUserId !== currentUserId) {
-                    setTyping(currentChatId, typingUserId);
+            async (message) => {
+                const typingUserId = parseInt(message.body);
+                console.log("Typing received in chat:", typingUserId);
+                
+                // Don't show typing indicator for current user
+                if (typingUserId === currentUserId) return;
+                
+                // For private chats, just show typing indicator
+                if (!isGroupChat) {
                     setIsTyping(true);
-                    // Reset typing indicator after 3 seconds of inactivity
+                    setTypingUser(otherUserName);
                     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
                     typingTimeoutRef.current = setTimeout(() => {
                         setIsTyping(false);
+                        setTypingUser(null);
                         clearTyping(currentChatId);
-                    }, 3000);
+                    }, 3000) as unknown as NodeJS.Timeout;
+                    return;
+                }
+                
+                // For group chats, get the username of the typing user
+                try {
+                    const userResponse = await chatApi.getUserInfo(typingUserId);
+                    const userName = userResponse.data.name;
+                    setIsTyping(true);
+                    setTypingUser(userName);
+                    
+                    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                    typingTimeoutRef.current = setTimeout(() => {
+                        setIsTyping(false);
+                        setTypingUser(null);
+                        clearTyping(currentChatId);
+                    }, 3000) as unknown as NodeJS.Timeout;
+                } catch (error) {
+                    console.error('Error getting typing user info:', error);
+                    // Fallback to generic typing indicator
+                    setIsTyping(true);
+                    setTypingUser("Someone");
+                    
+                    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                    typingTimeoutRef.current = setTimeout(() => {
+                        setIsTyping(false);
+                        setTypingUser(null);
+                        clearTyping(currentChatId);
+                    }, 3000) as unknown as NodeJS.Timeout;
                 }
             }
         );
@@ -496,6 +544,11 @@ export default function ChatScreen() {
             );
         }
 
+        if (item.type === "INVITATION") {
+            // Don't show invitation messages in chat - they're only in invitations page
+            return null;
+        }
+
         const isMine = item.sender?.id === currentUserId;
         return (
             <View key={item.id} style={[styles.messageContainer, isMine ? styles.myMessage : styles.otherMessage]}>
@@ -522,20 +575,30 @@ export default function ChatScreen() {
                     <View style={styles.avatarContainer}>
                         <View style={styles.avatarPlaceholder}>
                             <Text style={styles.avatarText}>
-                                {otherUserName ? otherUserName.charAt(0).toUpperCase() : "?"}
+                                {isGroupChat ? 
+                                    groupName ? groupName.charAt(0).toUpperCase() : "G" :
+                                    otherUserName ? otherUserName.charAt(0).toUpperCase() : "?"
+                                }
                             </Text>
-                            {isOtherUserOnline && (
+                            {!isGroupChat && isOtherUserOnline && (
                                 <View style={styles.onlineDot} />
                             )}
                         </View>
                     </View>
                     <View style={styles.headerTextContainer}>
                         <Text style={styles.headerTitle}>
-                            {otherUserName || "Unknown User"}
+                            {isGroupChat ? groupName : (otherUserName || "Unknown User")}
                         </Text>
-                        <Text style={styles.headerStatus}>
-                            {isOtherUserOnline ? "Online" : "Offline"}
-                        </Text>
+                        {!isGroupChat && (
+                            <Text style={styles.headerStatus}>
+                                {isOtherUserOnline ? "Online" : "Offline"}
+                            </Text>
+                        )}
+                        {isGroupChat && (
+                            <Text style={styles.headerStatus}>
+                                Group Chat
+                            </Text>
+                        )}
                     </View>
                 </View>
                 <TouchableOpacity>
@@ -560,7 +623,9 @@ export default function ChatScreen() {
 
             {isTyping && (
                 <View style={styles.typingIndicator}>
-                    <Text style={styles.typingText}>typing</Text>
+                    <Text style={styles.typingText}>
+                        {typingUser ? `${typingUser} is ` : ""}typing
+                    </Text>
                     <AnimatedTypingDots />
                 </View>
             )}
@@ -758,6 +823,21 @@ const styles = StyleSheet.create({
     systemMessageText: {
         fontSize: 12,
         color: "#8E8E93",
+        fontWeight: "600",
+    },
+    invitationMessageContainer: {
+        alignSelf: "center",
+        backgroundColor: "#F0F8FF",
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        marginVertical: 8,
+        borderLeftWidth: 3,
+        borderLeftColor: "#007AFF",
+    },
+    invitationMessageText: {
+        fontSize: 13,
+        color: "#007AFF",
         fontWeight: "600",
     },
     inputContainer: {

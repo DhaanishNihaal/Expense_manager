@@ -12,6 +12,9 @@ interface Message {
   timestamp: string;
   type?: string;
   chatId?: string;
+  inviteId?: number;
+  invitationStatus?: string;
+  groupId?: number; // For resend functionality
 }
 
 interface MessageContextType {
