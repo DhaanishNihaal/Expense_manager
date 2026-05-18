@@ -42,6 +42,10 @@ export const getChatParticipants = (chatId: string) => {
     return api.get<any>(`/api/chat/${chatId}/participants`);
 };
 
+export const checkChatMembership = (chatId: string) => {
+    return api.get<{ isMember: boolean }>(`/api/chat/${chatId}/membership`);
+};
+
 export default {
     createPrivateChat,
     getMyChats,
@@ -51,4 +55,5 @@ export default {
     getUserInfo,
     getChatParticipants,
     getChatInfo,
+    checkChatMembership,
 };

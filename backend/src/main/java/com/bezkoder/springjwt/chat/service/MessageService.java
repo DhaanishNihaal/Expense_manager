@@ -2,12 +2,14 @@ package com.bezkoder.springjwt.chat.service;
 
 import com.bezkoder.springjwt.chat.dto.SendMessageDTO;
 import com.bezkoder.springjwt.chat.entity.Chat;
+import com.bezkoder.springjwt.chat.entity.ChatType;
 import com.bezkoder.springjwt.chat.entity.Message;
 import com.bezkoder.springjwt.chat.entity.MessageType;
 import com.bezkoder.springjwt.chat.entity.SettlementStatus;
 import com.bezkoder.springjwt.chat.repository.ChatRepository;
 import com.bezkoder.springjwt.chat.repository.MessageRepository;
 import com.bezkoder.springjwt.chat.repository.ChatMemberRepository;
+import com.bezkoder.springjwt.groups.GroupMemberRepository;
 import com.bezkoder.springjwt.models.User;
 import com.bezkoder.springjwt.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
     private final ChatMemberRepository chatMemberRepository;
+    private final GroupMemberRepository groupMemberRepository;
 
     public Message saveMessage(SendMessageDTO dto, Long senderId) {
         System.out.println("DEBUG: Saving message for chatId: " + dto.getChatId() + ", senderId: " + senderId);
@@ -32,6 +35,15 @@ public class MessageService {
 
         try {
             Chat chat = chatRepository.findById(dto.getChatId()).orElseThrow(() -> new RuntimeException("Chat not found with id: " + dto.getChatId()));
+            
+            // For GROUP chats, also verify group membership
+            // (user may still be in chat_members for read access, but left the group)
+            if (chat.getType() == ChatType.GROUP && chat.getGroup() != null) {
+                if (!groupMemberRepository.existsByGroupIdAndUserId(chat.getGroup().getId(), senderId)) {
+                    throw new RuntimeException("You are no longer a member of this group");
+                }
+            }
+            
             User sender = userRepository.findById(senderId).orElseThrow(() -> new RuntimeException("Sender not found with id: " + senderId));
 
             Message message = new Message();

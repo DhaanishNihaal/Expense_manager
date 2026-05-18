@@ -134,7 +134,7 @@ export default function GroupDetailsScreen() {
       await api.delete(`/api/groups/${id}/leave`);
       setShowLeaveConfirmation(false);
       setShowGroupInfo(false);
-      router.replace("/groups");
+      router.replace("/(tabs)");
     } catch (e: any) {
       const msg = e.response?.data || "Failed to leave group";
       Alert.alert("Error", msg);

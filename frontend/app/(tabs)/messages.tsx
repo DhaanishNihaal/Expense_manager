@@ -17,6 +17,7 @@ import { useMessages } from "../../src/contexts/MessageContext";
 import { useWebSocket } from "../../src/contexts/WebSocketContext";
 import { debounce } from "lodash";
 import { useFocusEffect } from "expo-router";
+import ProfileMenu from "../../src/components/ProfileMenu";
 
 // Instagram-style animated typing dots component
 const AnimatedTypingDots = () => {
@@ -300,16 +301,19 @@ export default function MessagesScreen() {
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>Messages</Text>
-                <View style={styles.statusContainer}>
-                    <View style={[
-                        styles.statusDot, 
-                        connectionStatus === 'connected' ? styles.statusOnline : 
-                        connectionStatus === 'connecting' ? styles.statusConnecting : styles.statusOffline
-                    ]} />
-                    <Text style={styles.statusText}>
-                        {connectionStatus === 'connected' ? '' : 
-                         connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}
-                    </Text>
+                <View style={styles.headerRight}>
+                    <View style={styles.statusContainer}>
+                        <View style={[
+                            styles.statusDot, 
+                            connectionStatus === 'connected' ? styles.statusOnline : 
+                            connectionStatus === 'connecting' ? styles.statusConnecting : styles.statusOffline
+                        ]} />
+                        <Text style={styles.statusText}>
+                            {connectionStatus === 'connected' ? '' : 
+                             connectionStatus === 'connecting' ? 'Connecting...' : 'Offline'}
+                        </Text>
+                    </View>
+                    <ProfileMenu />
                 </View>
             </View>
 
@@ -376,6 +380,11 @@ const styles = StyleSheet.create({
         fontSize: 32,
         fontWeight: "bold",
         color: "#000000",
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
     },
     statusContainer: {
         flexDirection: 'row',

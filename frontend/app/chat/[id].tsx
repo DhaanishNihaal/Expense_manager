@@ -162,6 +162,7 @@ export default function ChatScreen() {
     const [otherUserName, setOtherUserName] = useState<string | null>(null);
     const [isGroupChat, setIsGroupChat] = useState(false);
     const [groupName, setGroupName] = useState<string | null>(null);
+    const [isMember, setIsMember] = useState(true);
     const flatListRef = useRef<FlatList>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
@@ -271,6 +272,11 @@ export default function ChatScreen() {
     useFocusEffect(
         useCallback(() => {
             if (currentChatId && currentChatId !== "undefined") {
+                // Check membership before allowing interactions
+                chatApi.checkChatMembership(currentChatId).then(res => {
+                    setIsMember(res.data.isMember);
+                }).catch(() => setIsMember(false));
+
                 chatApi.markAsRead(currentChatId).catch(console.error);
                 fetchMessages(currentChatId);
                 // Mark as read in global context
@@ -404,6 +410,17 @@ export default function ChatScreen() {
                 console.log("Current user set:", user.id);
             }
 
+            // Check membership for existing chats
+            if (currentChatId && currentChatId !== "undefined") {
+                try {
+                    const memberRes = await chatApi.checkChatMembership(currentChatId);
+                    setIsMember(memberRes.data.isMember);
+                    console.log("Membership check:", memberRes.data.isMember);
+                } catch {
+                    setIsMember(false);
+                }
+            }
+
             // Fetch other user's name if we have the ID
             if (otherUserId) {
                 try {
@@ -480,8 +497,8 @@ export default function ChatScreen() {
     };
 
     const sendMessage = async () => {
-        if (!inputText.trim() || !stompClient) {
-            console.warn("Cannot send message: no text or no connection");
+        if (!inputText.trim() || !stompClient || !isMember) {
+            console.warn("Cannot send message: no text, no connection, or not a member");
             return;
         }
 
@@ -630,22 +647,28 @@ export default function ChatScreen() {
                 </View>
             )}
 
-            <View style={styles.inputContainer}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Type a message..."
-                    value={inputText}
-                    onChangeText={handleTyping}
-                    multiline
-                />
-                <TouchableOpacity 
-                    style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]} 
-                    onPress={sendMessage}
-                    disabled={!inputText.trim()}
-                >
-                    <Ionicons name="send" size={24} color={inputText.trim() ? "#007AFF" : "#8E8E93"} />
-                </TouchableOpacity>
-            </View>
+            {isMember ? (
+                <View style={styles.inputContainer}>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Type a message..."
+                        value={inputText}
+                        onChangeText={handleTyping}
+                        multiline
+                    />
+                    <TouchableOpacity 
+                        style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]} 
+                        onPress={sendMessage}
+                        disabled={!inputText.trim()}
+                    >
+                        <Ionicons name="send" size={24} color={inputText.trim() ? "#007AFF" : "#8E8E93"} />
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <View style={styles.notMemberBar}>
+                    <Text style={styles.notMemberText}>You are no longer a member of this group</Text>
+                </View>
+            )}
         </KeyboardAvoidingView>
     );
 }
@@ -869,5 +892,20 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
+    },
+    notMemberBar: {
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        backgroundColor: "#FFF3CD",
+        borderTopWidth: 0.5,
+        borderTopColor: "#E5E5EA",
+        alignItems: "center",
+        paddingBottom: Platform.OS === "ios" ? 30 : 16,
+    },
+    notMemberText: {
+        fontSize: 14,
+        color: "#856404",
+        fontWeight: "600",
+        textAlign: "center",
     },
 });

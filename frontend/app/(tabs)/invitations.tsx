@@ -18,6 +18,7 @@ import {
     withdrawInvite,
     Invite,
 } from "../../src/api/invitesApi";
+import ProfileMenu from "../../src/components/ProfileMenu";
 
 type Tab = "received" | "sent";
 
@@ -211,7 +212,10 @@ export default function InvitationsScreen() {
     return (
         <View style={styles.container}>
             {/* Header */}
-            <Text style={styles.header}>Invitations</Text>
+            <View style={styles.headerRow}>
+                <Text style={styles.header}>Invitations</Text>
+                <ProfileMenu />
+            </View>
 
             {/* Tab toggle */}
             <View style={styles.tabRow}>
@@ -294,6 +298,11 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: "bold",
         color: "#1A1A1A",
+    },
+    headerRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
         marginBottom: 20,
     },
 

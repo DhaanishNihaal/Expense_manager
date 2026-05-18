@@ -14,7 +14,9 @@ import com.bezkoder.springjwt.chat.repository.MessageRepository;
 import org.springframework.stereotype.Service;
 import com.bezkoder.springjwt.groups.GroupRepository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import java.util.List;
+import java.util.Map;
 
 import com.bezkoder.springjwt.groups.dto.GroupDetailResponse;
 import com.bezkoder.springjwt.groups.dto.MemberResponse;
@@ -29,19 +31,38 @@ public class GroupService {
     private final ChatRepository chatRepository;
     private final ChatMemberRepository chatMemberRepository;
     private final MessageRepository messageRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     public GroupService(GroupRepository groupRepository,
                         GroupMemberRepository groupMemberRepository,
                         UserRepository userRepository,
                         ChatRepository chatRepository,
                         ChatMemberRepository chatMemberRepository,
-                        MessageRepository messageRepository) {
+                        MessageRepository messageRepository,
+                        SimpMessagingTemplate messagingTemplate) {
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.userRepository = userRepository;
         this.chatRepository = chatRepository;
         this.chatMemberRepository = chatMemberRepository;
         this.messageRepository = messageRepository;
+        this.messagingTemplate = messagingTemplate;
+    }
+
+    private void broadcastSystemMessage(Message systemMessage, String chatId) {
+        var broadcastMessage = new java.util.HashMap<String, Object>();
+        broadcastMessage.put("id", systemMessage.getId().toString());
+        broadcastMessage.put("content", systemMessage.getContent());
+        broadcastMessage.put("sender", Map.of(
+            "id", systemMessage.getSender().getId(),
+            "name", systemMessage.getSender().getName()
+        ));
+        broadcastMessage.put("timestamp", systemMessage.getTimestamp().toString());
+        broadcastMessage.put("type", "SYSTEM");
+        broadcastMessage.put("chatId", chatId);
+
+        messagingTemplate.convertAndSend("/topic/chat/" + chatId, broadcastMessage);
+        messagingTemplate.convertAndSend("/topic/messages", broadcastMessage);
     }
 
     @Transactional
@@ -227,9 +248,8 @@ public class GroupService {
         }
 
         // Sync with Chat and add system message
+        // NOTE: We do NOT remove from chat_members so user can still see old messages
         chatRepository.findByGroupId(groupId).ifPresent(chat -> {
-            chatMemberRepository.deleteByChatIdAndUserId(chat.getId(), user.getId());
-            
             // System message for leaving group
             Message systemMessage = new Message();
             systemMessage.setChat(chat);
@@ -237,7 +257,10 @@ public class GroupService {
             systemMessage.setContent(user.getName() + " left the group");
             systemMessage.setTimestamp(java.time.LocalDateTime.now());
             systemMessage.setSender(user);
-            messageRepository.save(systemMessage);
+            Message saved = messageRepository.save(systemMessage);
+            
+            // Broadcast via WebSocket so other members see it immediately
+            broadcastSystemMessage(saved, chat.getId().toString());
         });
     }
 
@@ -269,7 +292,9 @@ public class GroupService {
             systemMessage.setContent(admin.getName() + " removed " + member.getName());
             systemMessage.setTimestamp(java.time.LocalDateTime.now());
             systemMessage.setSender(admin);
-            messageRepository.save(systemMessage);
+            Message saved = messageRepository.save(systemMessage);
+            
+            broadcastSystemMessage(saved, chat.getId().toString());
         });
     }
 

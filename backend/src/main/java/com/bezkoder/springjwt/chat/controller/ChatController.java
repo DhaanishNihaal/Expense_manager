@@ -10,6 +10,7 @@ import com.bezkoder.springjwt.chat.entity.Chat;
 import com.bezkoder.springjwt.chat.entity.ChatType;
 import com.bezkoder.springjwt.chat.repository.ChatMemberRepository;
 import com.bezkoder.springjwt.chat.repository.ChatRepository;
+import com.bezkoder.springjwt.groups.GroupMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,7 @@ public class ChatController {
     private final ChatService chatService;
     private final ChatMemberRepository chatMemberRepository;
     private final ChatRepository chatRepository;
+    private final GroupMemberRepository groupMemberRepository;
 
     @PostMapping("/private/{otherUserId}")
     public UUID createPrivateChat(
@@ -139,5 +141,29 @@ public class ChatController {
     @GetMapping("/group/{groupId}")
     public UUID getGroupChatId(@PathVariable Long groupId) {
         return chatService.getGroupChatId(groupId);
+    }
+
+    @GetMapping("/{chatId}/membership")
+    public ResponseEntity<Map<String, Object>> checkMembership(@PathVariable String chatId, Authentication auth) {
+        try {
+            Long userId = ((UserDetailsImpl) auth.getPrincipal()).getId();
+            UUID chatUuid = UUID.fromString(chatId);
+            
+            // For GROUP chats, check group membership (not chat membership)
+            // This allows users who left to still see messages but not send
+            Chat chat = chatRepository.findById(chatUuid).orElse(null);
+            boolean canMessage;
+            if (chat != null && chat.getType() == ChatType.GROUP && chat.getGroup() != null) {
+                canMessage = groupMemberRepository.existsByGroupIdAndUserId(chat.getGroup().getId(), userId);
+            } else {
+                canMessage = chatMemberRepository.existsByChatIdAndUserId(chatUuid, userId);
+            }
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("isMember", canMessage);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }
