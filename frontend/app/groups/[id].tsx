@@ -288,9 +288,9 @@ export default function GroupDetailsScreen() {
               </TouchableOpacity>
             </View>
             <Text style={styles.inputLabel}>Title</Text>
-            <TextInput placeholder="Enter title" style={styles.input} value={newTitle} onChangeText={setNewTitle} />
+            <TextInput placeholder="Enter title" placeholderTextColor="#8E8E93" style={styles.input} value={newTitle} onChangeText={setNewTitle} />
             <Text style={styles.inputLabel}>Description (Optional)</Text>
-            <TextInput placeholder="Enter description" style={styles.input} value={newDescription} onChangeText={setNewDescription} multiline />
+            <TextInput placeholder="Enter description" placeholderTextColor="#8E8E93" style={styles.input} value={newDescription} onChangeText={setNewDescription} multiline />
             <TouchableOpacity style={[styles.modalButton, { backgroundColor: "#007AFF" }]} onPress={handleAddExpense}>
               <Text style={styles.modalButtonText}>Add Expense</Text>
             </TouchableOpacity>
@@ -308,7 +308,7 @@ export default function GroupDetailsScreen() {
                 <Text style={styles.closeIcon}>✕</Text>
               </TouchableOpacity>
             </View>
-            <TextInput placeholder="Search by name or email…" style={styles.input} value={memberSearch} onChangeText={setMemberSearch} autoFocus />
+            <TextInput placeholder="Search by name or email…" placeholderTextColor="#8E8E93" style={styles.input} value={memberSearch} onChangeText={setMemberSearch} autoFocus />
             <View style={styles.dropdownList}>
               {searchLoading ? <ActivityIndicator size="small" color="#007AFF" />
                 : memberSearch.trim() === "" ? <Text style={styles.dropdownHint}>Start typing to search users</Text>

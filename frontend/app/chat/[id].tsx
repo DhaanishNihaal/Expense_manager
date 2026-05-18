@@ -783,6 +783,7 @@ export default function ChatScreen() {
                     <TextInput
                         style={styles.input}
                         placeholder="Type a message..."
+                        placeholderTextColor="#8E8E93"
                         value={inputText}
                         onChangeText={handleTyping}
                         multiline
@@ -826,6 +827,7 @@ export default function ChatScreen() {
                             style={styles.modalInput}
                             keyboardType="numeric"
                             placeholder="0.00"
+                            placeholderTextColor="#8E8E93"
                             value={paymentAmount}
                             onChangeText={setPaymentAmount}
                         />

@@ -545,7 +545,7 @@ export default function ExpenseTransactionsScreen() {
                   Total Amount
                 </Text>
                 <TextInput
-                  placeholder="Enter amount"
+                  placeholder="Enter amount" placeholderTextColor="#8E8E93"
                   style={styles.input}
                   value={amount}
                   onChangeText={setAmount}
