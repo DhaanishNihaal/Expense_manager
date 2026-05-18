@@ -14,7 +14,15 @@ export const fetchExpenseSettlements = (expenseId: number) =>
 export const fetchGroupSettlements = (groupId: number) =>
   api.get<Settlement[]>(`/api/groups/${groupId}/settlements`);
 
+export const fetchPrivateSettlements = (username: string) =>
+  api.get<Settlement[]>(`/api/balances/private/${username}`);
+
+export const paySettlement = (receiverId: number, amount: number, groupId?: number) =>
+  api.post(`/api/settlement/pay`, { receiverId, amount, groupId });
+
 export default {
   fetchExpenseSettlements,
   fetchGroupSettlements,
+  fetchPrivateSettlements,
+  paySettlement,
 };

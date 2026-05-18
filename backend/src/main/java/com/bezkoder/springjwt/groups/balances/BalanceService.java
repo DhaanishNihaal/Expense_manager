@@ -43,11 +43,26 @@ public class BalanceService {
     }
     
     public List<BalanceResponse> getUserBalances(String username) {
-
         List<ExpenseTransaction> transactions =
                 transactionRepository.findByPayerUsernameOrReceiverUsername(username, username);
-
         return SettlementEngine.settle(transactions);
+    }
+    
+    // 🔹 Private/Direct chat level
+    public List<BalanceResponse> getPrivateBalances(String username1, String username2) {
+        // Fetch all transactions involving user1
+        List<ExpenseTransaction> transactions =
+                transactionRepository.findByPayerUsernameOrReceiverUsername(username1, username1);
+                
+        // Filter to only include transactions where user2 is the other party
+        List<ExpenseTransaction> filteredTransactions = transactions.stream()
+            .filter(tx -> 
+                (tx.getPayer().getUsername().equals(username1) && tx.getReceiver().getUsername().equals(username2)) ||
+                (tx.getPayer().getUsername().equals(username2) && tx.getReceiver().getUsername().equals(username1))
+            )
+            .toList();
+            
+        return SettlementEngine.settle(filteredTransactions);
     }
     
 }

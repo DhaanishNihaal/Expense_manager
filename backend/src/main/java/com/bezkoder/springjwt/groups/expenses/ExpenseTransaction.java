@@ -1,6 +1,7 @@
 package com.bezkoder.springjwt.groups.expenses;
 
 import com.bezkoder.springjwt.models.User;
+import com.bezkoder.springjwt.groups.Group;
 import jakarta.persistence.*;
 
 @Entity
@@ -11,13 +12,21 @@ public class ExpenseTransaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String paymentGroupId;
 
     // Which expense this transaction belongs to (Dinner, Taxi, etc.)
     @ManyToOne
-    @JoinColumn(name = "expense_id", nullable = false)
+    @JoinColumn(name = "expense_id", nullable = true)
     private Expense expense;
+
+    // The group this transaction belongs to (optional, for group-level settlements)
+    @ManyToOne
+    @JoinColumn(name = "group_id", nullable = true)
+    private Group group;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean isSettlement = false;
 
     // Who paid the money
     @ManyToOne
@@ -74,5 +83,21 @@ public class ExpenseTransaction {
     }
     public void setPaymentGroupId(String paymentGroupId) {
         this.paymentGroupId = paymentGroupId;
+    }
+
+    public Group getGroup() {
+        return group;
+    }
+
+    public void setGroup(Group group) {
+        this.group = group;
+    }
+
+    public boolean isSettlement() {
+        return isSettlement;
+    }
+
+    public void setSettlement(boolean settlement) {
+        isSettlement = settlement;
     }
 }

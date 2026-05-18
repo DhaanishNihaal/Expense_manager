@@ -10,7 +10,11 @@ import {
     StyleSheet,
     ActivityIndicator,
     Animated,
+    Modal,
+    Alert,
+    ScrollView,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -19,6 +23,9 @@ import { useMessages } from "../../src/contexts/MessageContext";
 import { API_BASE_URL } from "../../src/config/config";
 import { getToken } from "../../src/utils/storage";
 import chatApi from "../../src/api/chatApi";
+import { fetchGroupMembers } from "../../src/api/groupsApi";
+import { paySettlement, fetchPrivateSettlements, fetchGroupSettlements, Settlement } from "../../src/api/settlementApi";
+import { User } from "../../src/types/user";
 
 // Instagram-style animated typing dots component
 const AnimatedTypingDots = () => {
@@ -160,9 +167,21 @@ export default function ChatScreen() {
     const [typingUser, setTypingUser] = useState<string | null>(null);
     const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
     const [otherUserName, setOtherUserName] = useState<string | null>(null);
+    const [otherUserUsername, setOtherUserUsername] = useState<string | null>(null);
     const [isGroupChat, setIsGroupChat] = useState(false);
     const [groupName, setGroupName] = useState<string | null>(null);
+    const [currentGroupId, setCurrentGroupId] = useState<number | null>(null);
     const [isMember, setIsMember] = useState(true);
+    
+    // Settlement Feature State
+    const [isPaymentModalVisible, setIsPaymentModalVisible] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState("");
+    const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+    const [groupMembers, setGroupMembers] = useState<User[]>([]);
+    
+    const [isSettlementsModalVisible, setIsSettlementsModalVisible] = useState(false);
+    const [settlementsList, setSettlementsList] = useState<Settlement[]>([]);
+    
     const flatListRef = useRef<FlatList>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     
@@ -193,7 +212,8 @@ export default function ChatScreen() {
                     if (chatInfoResponse.data.type === 'GROUP') {
                         setIsGroupChat(true);
                         setGroupName(chatInfoResponse.data.groupName);
-                        console.log('✅ Detected group chat:', chatInfoResponse.data.groupName);
+                        setCurrentGroupId(chatInfoResponse.data.groupId);
+                        console.log('✅ Detected group chat:', chatInfoResponse.data.groupName, 'with ID:', chatInfoResponse.data.groupId);
                         return; // Don't try to get other user info for group chats
                     }
                     
@@ -210,6 +230,7 @@ export default function ChatScreen() {
                             if (participant.id !== currentUserId) {
                                 setOtherUserId(participant.id);
                                 setOtherUserName(participant.name);
+                                setOtherUserUsername(participant.username);
                                 console.log('✅ Set other user from participants API:', participant.id, participant.name);
                                 return;
                             }
@@ -231,6 +252,7 @@ export default function ChatScreen() {
                         if (otherUserMessage && otherUserMessage.sender) {
                             setOtherUserId(otherUserMessage.sender.id);
                             setOtherUserName(otherUserMessage.sender.name);
+                            setOtherUserUsername(otherUserMessage.sender.username);
                             console.log('✅ Set other user from messages:', otherUserMessage.sender.id, otherUserMessage.sender.name);
                             return;
                         }
@@ -246,6 +268,7 @@ export default function ChatScreen() {
                         if (globalOtherUserMessage && globalOtherUserMessage.sender) {
                             setOtherUserId(globalOtherUserMessage.sender.id);
                             setOtherUserName(globalOtherUserMessage.sender.name);
+                            setOtherUserUsername(globalOtherUserMessage.sender.username);
                             console.log('✅ Set other user from global messages:', globalOtherUserMessage.sender.id, globalOtherUserMessage.sender.name);
                             return;
                         }
@@ -426,6 +449,7 @@ export default function ChatScreen() {
                 try {
                     const response = await chatApi.getUserInfo(otherUserId);
                     setOtherUserName(response.data.name);
+                    setOtherUserUsername(response.data.username);
                     console.log("Other user name set:", response.data.name);
                 } catch (error) {
                     console.error("Error fetching other user info:", error);
@@ -436,6 +460,84 @@ export default function ChatScreen() {
             console.error("Error setting up chat:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleOpenPaymentModal = async () => {
+        setIsPaymentModalVisible(true);
+        if (isGroupChat && currentGroupId) {
+            try {
+                const members = await fetchGroupMembers(currentGroupId);
+                // Filter out current user
+                const otherMembers = members.filter(m => m.id !== currentUserId);
+                setGroupMembers(otherMembers);
+                if (otherMembers.length > 0) {
+                    setSelectedMemberId(otherMembers[0].id);
+                }
+            } catch (error) {
+                console.error("Failed to fetch group members:", error);
+            }
+        } else {
+            setSelectedMemberId(otherUserId);
+        }
+    };
+
+    const handleSettlePayment = async () => {
+        if (!paymentAmount || isNaN(Number(paymentAmount))) {
+            Alert.alert("Invalid Amount", "Please enter a valid numeric amount");
+            return;
+        }
+        
+        const amount = parseFloat(paymentAmount);
+        const receiverId = selectedMemberId;
+        
+        if (!receiverId) {
+            Alert.alert("Error", "No recipient selected");
+            return;
+        }
+        
+        try {
+            await paySettlement(receiverId, amount, currentGroupId || undefined);
+            
+            // Send STOMP message for optimistic display
+            if (stompClient && currentChatId) {
+                const receiverName = groupMembers.find(m => m.id === receiverId)?.name || otherUserName || "Unknown User";
+                
+                const messageData = {
+                    chatId: currentChatId,
+                    senderId: currentUserId,
+                    content: `paid ${receiverName} $${amount.toFixed(2)}`,
+                    type: "SETTLEMENT",
+                    settlementAmount: amount
+                };
+                
+                stompClient.publish({
+                    destination: "/app/chat.send",
+                    body: JSON.stringify(messageData)
+                });
+            }
+            
+            setIsPaymentModalVisible(false);
+            setPaymentAmount("");
+        } catch (error) {
+            console.error("Failed to make payment:", error);
+            Alert.alert("Error", "Failed to process payment");
+        }
+    };
+
+    const handleOpenSettlementsModal = async () => {
+        setIsSettlementsModalVisible(true);
+        try {
+            if (isGroupChat && currentGroupId) {
+                const res = await fetchGroupSettlements(currentGroupId);
+                setSettlementsList(res.data);
+            } else if (!isGroupChat && otherUserUsername) {
+                const res = await fetchPrivateSettlements(otherUserUsername);
+                setSettlementsList(res.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch settlements:", error);
+            Alert.alert("Error", "Failed to load settlements");
         }
     };
 
@@ -561,6 +663,27 @@ export default function ChatScreen() {
             );
         }
 
+        const isMe = item.sender.id === currentUserId;
+
+        if (item.type === "SETTLEMENT") {
+            return (
+                <View key={item.id} style={[styles.messageContainer, isMe ? styles.myMessage : styles.otherMessage, styles.settlementMessage]}>
+                    <View style={styles.settlementHeader}>
+                        <Ionicons name="checkmark-circle" size={16} color={isMe ? "#FFFFFF" : "#34C759"} />
+                        <Text style={[styles.settlementHeaderText, isMe ? styles.myMessageText : styles.otherMessageText]}>
+                            Payment Sent
+                        </Text>
+                    </View>
+                    <Text style={[styles.messageText, isMe ? styles.myMessageText : styles.otherMessageText, styles.settlementAmountDisplay]}>
+                        {item.content}
+                    </Text>
+                    <Text style={[styles.messageTime, isMe ? styles.myMessageTime : styles.otherMessageTime]}>
+                        {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                </View>
+            );
+        }
+
         if (item.type === "INVITATION") {
             // Don't show invitation messages in chat - they're only in invitations page
             return null;
@@ -618,9 +741,14 @@ export default function ChatScreen() {
                         )}
                     </View>
                 </View>
-                <TouchableOpacity>
-                    <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
-                </TouchableOpacity>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <TouchableOpacity onPress={handleOpenSettlementsModal} style={{ marginRight: 15 }}>
+                        <Ionicons name="scale-outline" size={24} color="#007AFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity>
+                        <Ionicons name="ellipsis-vertical" size={24} color="#007AFF" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             {loading ? (
@@ -649,6 +777,9 @@ export default function ChatScreen() {
 
             {isMember ? (
                 <View style={styles.inputContainer}>
+                    <TouchableOpacity onPress={handleOpenPaymentModal} style={{ marginRight: 10 }}>
+                        <Ionicons name="card" size={28} color="#007AFF" />
+                    </TouchableOpacity>
                     <TextInput
                         style={styles.input}
                         placeholder="Type a message..."
@@ -669,6 +800,80 @@ export default function ChatScreen() {
                     <Text style={styles.notMemberText}>You are no longer a member of this group</Text>
                 </View>
             )}
+
+            {/* Payment Modal */}
+            <Modal visible={isPaymentModalVisible} animationType="slide" transparent={true}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Settle Payment</Text>
+                        
+                        {isGroupChat && (
+                            <View style={styles.pickerContainer}>
+                                <Text style={styles.inputLabel}>Pay to:</Text>
+                                <Picker
+                                    selectedValue={selectedMemberId}
+                                    onValueChange={(itemValue) => setSelectedMemberId(itemValue)}
+                                >
+                                    {groupMembers.map(member => (
+                                        <Picker.Item key={member.id} label={member.name} value={member.id} />
+                                    ))}
+                                </Picker>
+                            </View>
+                        )}
+                        
+                        <Text style={styles.inputLabel}>Amount ($):</Text>
+                        <TextInput
+                            style={styles.modalInput}
+                            keyboardType="numeric"
+                            placeholder="0.00"
+                            value={paymentAmount}
+                            onChangeText={setPaymentAmount}
+                        />
+                        
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setIsPaymentModalVisible(false)}>
+                                <Text style={styles.modalCancelText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.modalSettleBtn} onPress={handleSettlePayment}>
+                                <Text style={styles.modalSettleText}>Pay</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Settlements Modal */}
+            <Modal visible={isSettlementsModalVisible} animationType="slide" transparent={true}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Settlements</Text>
+                            <TouchableOpacity onPress={() => setIsSettlementsModalVisible(false)}>
+                                <Ionicons name="close" size={24} color="#8E8E93" />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <ScrollView style={styles.settlementsList}>
+                            {settlementsList.length === 0 ? (
+                                <Text style={styles.emptyText}>No settlements needed.</Text>
+                            ) : (
+                                settlementsList.map((settlement, index) => (
+                                    <View key={index} style={styles.settlementItem}>
+                                        <View style={styles.settlementRow}>
+                                            <Text style={styles.settlementUser}>{settlement.fromname}</Text>
+                                            <Ionicons name="arrow-forward" size={16} color="#8E8E93" style={{ marginHorizontal: 8 }} />
+                                            <Text style={styles.settlementUser}>{settlement.toname}</Text>
+                                        </View>
+                                        <Text style={styles.settlementAmountDisplay}>
+                                            ${settlement.amount.toFixed(2)}
+                                        </Text>
+                                    </View>
+                                ))
+                            )}
+                        </ScrollView>
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingView>
     );
 }
@@ -907,5 +1112,129 @@ const styles = StyleSheet.create({
         color: "#856404",
         fontWeight: "600",
         textAlign: "center",
+    },
+    settlementMessage: {
+        borderWidth: 1,
+        borderColor: "#E5E5EA",
+        minWidth: 160,
+    },
+    settlementHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: "rgba(0,0,0,0.1)",
+        paddingBottom: 4,
+    },
+    settlementHeaderText: {
+        fontSize: 12,
+        fontWeight: "bold",
+        marginLeft: 6,
+    },
+    settlementAmountDisplay: {
+        fontSize: 24,
+        fontWeight: "bold",
+        textAlign: "center",
+        marginVertical: 4,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "flex-end",
+    },
+    modalContent: {
+        backgroundColor: "#FFFFFF",
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        padding: 20,
+        minHeight: 300,
+        maxHeight: "80%",
+    },
+    modalHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: "bold",
+        marginBottom: 20,
+    },
+    pickerContainer: {
+        marginBottom: 20,
+        backgroundColor: "#F2F2F7",
+        borderRadius: 10,
+    },
+    inputLabel: {
+        fontSize: 16,
+        fontWeight: "600",
+        marginBottom: 8,
+        color: "#8E8E93",
+    },
+    modalInput: {
+        backgroundColor: "#F2F2F7",
+        borderRadius: 10,
+        padding: 15,
+        fontSize: 24,
+        fontWeight: "bold",
+        marginBottom: 30,
+        textAlign: "center",
+    },
+    modalActions: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+    },
+    modalCancelBtn: {
+        flex: 1,
+        padding: 15,
+        backgroundColor: "#F2F2F7",
+        borderRadius: 10,
+        marginRight: 10,
+        alignItems: "center",
+    },
+    modalSettleBtn: {
+        flex: 1,
+        padding: 15,
+        backgroundColor: "#34C759",
+        borderRadius: 10,
+        marginLeft: 10,
+        alignItems: "center",
+    },
+    modalCancelText: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#FF3B30",
+    },
+    modalSettleText: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#FFFFFF",
+    },
+    settlementsList: {
+        flex: 1,
+    },
+    emptyText: {
+        textAlign: "center",
+        color: "#8E8E93",
+        fontSize: 16,
+        marginTop: 40,
+    },
+    settlementItem: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingVertical: 15,
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: "#E5E5EA",
+    },
+    settlementRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        flex: 1,
+    },
+    settlementUser: {
+        fontSize: 16,
+        fontWeight: "500",
     },
 });

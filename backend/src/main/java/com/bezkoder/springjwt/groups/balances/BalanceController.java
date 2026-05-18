@@ -34,4 +34,10 @@ public class BalanceController {
         String username = authentication.getName();
         return balanceService.getUserBalances(username);
     }
+
+    @GetMapping("/balances/private/{otherUsername}")
+    public List<BalanceResponse> getPrivateBalances(@PathVariable String otherUsername, Authentication authentication) {
+        String username = authentication.getName();
+        return balanceService.getPrivateBalances(username, otherUsername);
+    }
 }

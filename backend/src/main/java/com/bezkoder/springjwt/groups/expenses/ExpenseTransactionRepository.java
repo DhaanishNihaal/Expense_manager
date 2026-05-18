@@ -15,23 +15,27 @@ public interface ExpenseTransactionRepository
     @Query("""
         SELECT et
         FROM ExpenseTransaction et
-        WHERE et.expense.group.id = :groupId
+        LEFT JOIN et.expense e
+        LEFT JOIN e.group eg
+        WHERE eg.id = :groupId OR et.group.id = :groupId
     """)
     List<ExpenseTransaction> findAllByGroupId(@Param("groupId") Long groupId);
     // Get all transactions for a specific expense
     List<ExpenseTransaction> findByExpenseId(Long expenseId);
 
     // Get all transactions for all expenses in a group
-    List<ExpenseTransaction> findByExpenseGroupId(Long groupId);
+    @Query("SELECT et FROM ExpenseTransaction et LEFT JOIN et.expense e LEFT JOIN e.group eg WHERE eg.id = :groupId OR et.group.id = :groupId")
+    List<ExpenseTransaction> findByExpenseGroupId(@Param("groupId") Long groupId);
 
     List<ExpenseTransaction> findByExpenseIdAndPaymentGroupId(Long expenseId, String paymentGroupId);
 
-    List<ExpenseTransaction> findByExpense_GroupId(Long groupId);
+    @Query("SELECT et FROM ExpenseTransaction et LEFT JOIN et.expense e LEFT JOIN e.group eg WHERE eg.id = :groupId OR et.group.id = :groupId")
+    List<ExpenseTransaction> findByExpense_GroupId(@Param("groupId") Long groupId);
 
     List<ExpenseTransaction> findAll();
 
     List<ExpenseTransaction> findByPayerUsernameOrReceiverUsername(String payerUsername, String receiverUsername);
 
-    @Query("SELECT COALESCE(SUM(et.amount), 0) FROM ExpenseTransaction et WHERE et.expense.group.id = :groupId")
+    @Query("SELECT COALESCE(SUM(et.amount), 0) FROM ExpenseTransaction et LEFT JOIN et.expense e LEFT JOIN e.group eg WHERE eg.id = :groupId OR et.group.id = :groupId")
     Double sumAmountByGroupId(@Param("groupId") Long groupId);
 }

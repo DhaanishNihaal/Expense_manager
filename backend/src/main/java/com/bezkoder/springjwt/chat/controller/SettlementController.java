@@ -18,6 +18,12 @@ public class SettlementController {
         settlementService.acceptSettlement(messageId);
     }
     
-
-    
+    @PostMapping("/pay")
+    public void paySettlement(
+        @RequestBody com.bezkoder.springjwt.chat.dto.PaySettlementRequest request, 
+        org.springframework.security.core.Authentication auth) 
+    {
+        Long payerId = ((com.bezkoder.springjwt.security.services.UserDetailsImpl) auth.getPrincipal()).getId();
+        settlementService.pay(payerId, request);
+    }
 }
