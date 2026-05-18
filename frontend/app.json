@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "splitup",
-    "slug": "splitup",
+    "slug": "expense-manager-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/splitup-icon.jpg",
@@ -23,7 +23,7 @@
       "package": "com.dhaanishnihaal.expensemanagermobile"
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -43,7 +43,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
     },
     "extra": {
       "router": {},
@@ -51,6 +51,12 @@
         "projectId": "55271ea8-3194-4b98-bbff-b4eca0d75b9c"
       }
     },
-    "owner": "dhaanishnihaal"
+    "owner": "dhaanishnihaal",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/55271ea8-3194-4b98-bbff-b4eca0d75b9c"
+    }
   }
 }
