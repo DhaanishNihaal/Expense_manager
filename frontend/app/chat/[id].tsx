@@ -506,7 +506,7 @@ export default function ChatScreen() {
                 const messageData = {
                     chatId: currentChatId,
                     senderId: currentUserId,
-                    content: `paid ${receiverName} $${amount.toFixed(2)}`,
+                    content: `paid ${receiverName} ₹${amount.toFixed(2)}`,
                     type: "SETTLEMENT",
                     settlementAmount: amount
                 };
@@ -708,8 +708,8 @@ export default function ChatScreen() {
     return (
         <KeyboardAvoidingView
             style={styles.container}
-            behavior={Platform.OS === "ios" ? "padding" : "padding"}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 90}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>
@@ -765,6 +765,7 @@ export default function ChatScreen() {
                     data={messages}
                     renderItem={renderMessage}
                     keyExtractor={(item) => item.id}
+                    style={{ flex: 1 }}
                     contentContainerStyle={styles.messagesList}
                     onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
                 />
@@ -826,15 +827,18 @@ export default function ChatScreen() {
                             </View>
                         )}
                         
-                        <Text style={styles.inputLabel}>Amount ($):</Text>
-                        <TextInput
-                            style={styles.modalInput}
-                            keyboardType="numeric"
-                            placeholder="0.00"
-                            placeholderTextColor="#8E8E93"
-                            value={paymentAmount}
-                            onChangeText={setPaymentAmount}
-                        />
+                        <Text style={styles.inputLabel}>Amount (₹):</Text>
+                        <View style={styles.paymentInputContainer}>
+                            <Text style={styles.paymentRupeeSymbol}>₹</Text>
+                            <TextInput
+                                style={styles.paymentTextInput}
+                                keyboardType="numeric"
+                                placeholder="0.00"
+                                placeholderTextColor="#8E8E93"
+                                value={paymentAmount}
+                                onChangeText={setPaymentAmount}
+                            />
+                        </View>
                         
                         <View style={styles.modalActions}>
                             <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setIsPaymentModalVisible(false)}>
@@ -866,12 +870,16 @@ export default function ChatScreen() {
                                 settlementsList.map((settlement, index) => (
                                     <View key={index} style={styles.settlementItem}>
                                         <View style={styles.settlementRow}>
-                                            <Text style={styles.settlementUser}>{settlement.fromname}</Text>
-                                            <Ionicons name="arrow-forward" size={16} color="#8E8E93" style={{ marginHorizontal: 8 }} />
-                                            <Text style={styles.settlementUser}>{settlement.toname}</Text>
+                                            <Text style={styles.settlementUser} numberOfLines={1} ellipsizeMode="tail">
+                                                {settlement.fromname}
+                                            </Text>
+                                            <Ionicons name="arrow-forward" size={16} color="#8E8E93" style={{ marginHorizontal: 8, flexShrink: 0 }} />
+                                            <Text style={styles.settlementUser} numberOfLines={1} ellipsizeMode="tail">
+                                                {settlement.toname}
+                                            </Text>
                                         </View>
-                                        <Text style={styles.settlementAmountDisplay}>
-                                            ${settlement.amount.toFixed(2)}
+                                        <Text style={styles.settlementItemAmount}>
+                                            ₹{settlement.amount.toFixed(2)}
                                         </Text>
                                     </View>
                                 ))
@@ -1178,14 +1186,26 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         color: "#8E8E93",
     },
-    modalInput: {
+    paymentInputContainer: {
+        flexDirection: "row",
+        alignItems: "center",
         backgroundColor: "#F2F2F7",
         borderRadius: 10,
-        padding: 15,
+        paddingHorizontal: 15,
+        marginBottom: 30,
+    },
+    paymentRupeeSymbol: {
         fontSize: 24,
         fontWeight: "bold",
-        marginBottom: 30,
-        textAlign: "center",
+        color: "#000000",
+        marginRight: 8,
+    },
+    paymentTextInput: {
+        flex: 1,
+        paddingVertical: 15,
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#000000",
     },
     modalActions: {
         flexDirection: "row",
@@ -1238,9 +1258,16 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         flex: 1,
+        marginRight: 10,
     },
     settlementUser: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: "500",
+        flexShrink: 1,
+    },
+    settlementItemAmount: {
+        fontSize: 18,
+        fontWeight: "bold",
+        color: "#1A1A1A",
     },
 });
