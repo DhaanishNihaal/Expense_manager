@@ -7,10 +7,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.security.core.Authentication;
 
 import com.bezkoder.springjwt.chat.service.MessageService;
+import com.bezkoder.springjwt.chat.repository.ChatMemberRepository;
+import com.bezkoder.springjwt.chat.entity.ChatMember;
 import com.bezkoder.springjwt.chat.dto.SendMessageDTO;
 import com.bezkoder.springjwt.chat.dto.TypingDTO;
 import com.bezkoder.springjwt.chat.dto.PresenceDTO;
 import com.bezkoder.springjwt.security.services.UserDetailsImpl;
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -18,6 +21,7 @@ public class ChatWebSocketController {
 
     private final MessageService messageService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatMemberRepository chatMemberRepository;
 
     @MessageMapping("/chat.send")
     public void sendMessage(SendMessageDTO dto, Authentication auth) {
@@ -56,13 +60,16 @@ public class ChatWebSocketController {
                     broadcastMessage
             );
             
-            // Also broadcast to global topic for background message handling
-            messagingTemplate.convertAndSend(
-                    "/topic/messages",
-                    broadcastMessage
-            );
+            // Broadcast to each member's private topic for background handling
+            List<ChatMember> members = chatMemberRepository.findByChatId(dto.getChatId());
+            for (ChatMember member : members) {
+                messagingTemplate.convertAndSend(
+                        "/topic/user/" + member.getUser().getId() + "/messages",
+                        broadcastMessage
+                );
+            }
             
-            System.out.println("Message saved and broadcasted: " + savedMessage.getId());
+            System.out.println("Message saved and broadcasted to members: " + savedMessage.getId());
         } catch (Exception e) {
             System.err.println("Error in sendMessage: " + e.getMessage());
             e.printStackTrace();

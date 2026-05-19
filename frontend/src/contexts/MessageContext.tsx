@@ -178,8 +178,8 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
     // Subscribe to all chat messages
     const subscriptions: any[] = [];
 
-    // Listen for global message broadcasts
-    const globalMessageSubscription = stompClient.subscribe('/topic/messages', (message) => {
+    // Listen for private background message broadcasts
+    const globalMessageSubscription = stompClient.subscribe(`/topic/user/${currentUserId}/messages`, (message) => {
       try {
         const newMessage = JSON.parse(message.body);
         const chatId = newMessage.chatId;

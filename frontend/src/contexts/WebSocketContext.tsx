@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Client } from '@stomp/stompjs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import 'fast-text-encoding';
 import { API_BASE_URL } from '../config/config';
 import { getToken } from '../utils/storage';
 
@@ -53,6 +54,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
             Authorization: `Bearer ${token}`,
             userId: user.id.toString(), // Add userId header
           },
+          forceBinaryWSProtocols: true,
+          appendMissingNULLonIncoming: true,
           reconnectDelay: 5000,
           debug: (msg) => console.log("STOMP:", msg),
           heartbeatIncoming: 4000,
