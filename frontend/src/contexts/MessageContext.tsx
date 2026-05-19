@@ -60,7 +60,7 @@ interface MessageProviderProps {
 }
 
 export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) => {
-  const { stompClient } = useWebSocket();
+  const { stompClient, connectionStatus } = useWebSocket();
   const [messages, setMessagesState] = useState<Record<string, Message[]>>({});
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [typingUsers, setTypingUsers] = useState<Record<string, number>>({});
@@ -169,11 +169,11 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
     };
     
     getCurrentUser();
-  }, [stompClient]);
+  }, [stompClient, connectionStatus]);
 
   // Global message subscriptions - now with proper dependencies
   useEffect(() => {
-    if (!stompClient || !currentUserId) return;
+    if (!stompClient || connectionStatus !== 'connected' || !currentUserId) return;
 
     // Subscribe to all chat messages
     const subscriptions: any[] = [];
@@ -239,7 +239,7 @@ export const MessageProvider: React.FC<MessageProviderProps> = ({ children }) =>
     return () => {
       subscriptions.forEach(sub => sub.unsubscribe());
     };
-  }, [stompClient, currentUserId, addMessage, incrementUnread, setTyping, clearTyping, setOnlineStatus]);
+  }, [stompClient, connectionStatus, currentUserId, addMessage, incrementUnread, setTyping, clearTyping, setOnlineStatus]);
 
   const value: MessageContextType = {
     messages,

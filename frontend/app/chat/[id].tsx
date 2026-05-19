@@ -500,7 +500,7 @@ export default function ChatScreen() {
             await paySettlement(receiverId, amount, currentGroupId || undefined);
             
             // Send STOMP message for optimistic display
-            if (stompClient && currentChatId) {
+            if (stompClient && stompClient.connected && currentChatId) {
                 const receiverName = groupMembers.find(m => m.id === receiverId)?.name || otherUserName || "Unknown User";
                 
                 const messageData = {
@@ -515,6 +515,10 @@ export default function ChatScreen() {
                     destination: "/app/chat.send",
                     body: JSON.stringify(messageData)
                 });
+            } else {
+                console.warn("Could not send payment STOMP message: WebSocket is disconnected");
+                // Refresh messages from API to show the payment
+                fetchMessages(currentChatId);
             }
             
             setIsPaymentModalVisible(false);
@@ -553,7 +557,7 @@ export default function ChatScreen() {
     const handleTyping = (text: string) => {
         setInputText(text);
         
-        if (!stompClient || !currentChatId || !currentUserId) return;
+        if (!stompClient || !stompClient.connected || !currentChatId || !currentUserId) return;
 
         const now = Date.now();
         if (now - lastTypingSentRef.current > 2000) {
@@ -599,8 +603,8 @@ export default function ChatScreen() {
     };
 
     const sendMessage = async () => {
-        if (!inputText.trim() || !stompClient || !isMember) {
-            console.warn("Cannot send message: no text, no connection, or not a member");
+        if (!inputText.trim() || !stompClient || !stompClient.connected || !isMember) {
+            console.warn(`Cannot send message. Text empty: ${!inputText.trim()}, stompClient null: ${!stompClient}, not connected: ${stompClient && !stompClient.connected}, not member: ${!isMember}`);
             return;
         }
 
@@ -704,8 +708,8 @@ export default function ChatScreen() {
     return (
         <KeyboardAvoidingView
             style={styles.container}
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+            behavior={Platform.OS === "ios" ? "padding" : "padding"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 90}
         >
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => router.back()}>

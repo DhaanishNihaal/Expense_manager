@@ -3,8 +3,11 @@ import { useState } from "react";
 import { login } from "../../src/auth/authService";
 import { useRouter } from "expo-router";
 
+import { useWebSocket } from "../../src/contexts/WebSocketContext";
+
 export default function LoginScreen() {
   const router = useRouter();
+  const { connectWebSocket } = useWebSocket();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -17,6 +20,9 @@ export default function LoginScreen() {
       setError("");
 
       await login(username, password);
+
+      // Connect WebSocket immediately after successful login
+      await connectWebSocket();
 
       // login successful → go to groups
       router.replace("/(tabs)");
