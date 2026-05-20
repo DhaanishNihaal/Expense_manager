@@ -99,6 +99,7 @@ public class WebSecurityConfig { // extends WebSecurityConfigurerAdapter {
         .authorizeHttpRequests(auth -> 
           auth.requestMatchers("/api/auth/**").permitAll()
               .requestMatchers("/api/test/**").permitAll()
+              .requestMatchers("/health").permitAll()
               .requestMatchers("/error").permitAll() 
               .requestMatchers("/ws/**").permitAll()
               .requestMatchers("/ws").permitAll() // Add explicit WebSocket endpoint
