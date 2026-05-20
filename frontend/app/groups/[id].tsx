@@ -381,7 +381,7 @@ export default function GroupDetailsScreen() {
             <View style={styles.divider} />
 
             <Text style={styles.membersLabel}>Members</Text>
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }} contentContainerStyle={{ paddingBottom: 80 }}>
               {group.members.map(m => (
                 <View key={m.id} style={{ position: "relative", zIndex: openMemberMenuId === m.id ? 10 : 1 }}>
                   <View style={styles.memberRow}>

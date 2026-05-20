@@ -57,6 +57,7 @@ export default function SignupScreen() {
       <Text style={styles.title}>Create Account</Text>
       <TextInput
         placeholder="Name"
+        placeholderTextColor="#8E8E93"
         value={name}
         onChangeText={setName}
         style={styles.input}
@@ -64,6 +65,7 @@ export default function SignupScreen() {
       />
       <TextInput
         placeholder="Username"
+        placeholderTextColor="#8E8E93"
         value={username}
         onChangeText={setUsername}
         style={styles.input}
@@ -72,6 +74,7 @@ export default function SignupScreen() {
 
       <TextInput
         placeholder="Email"
+        placeholderTextColor="#8E8E93"
         value={email}
         onChangeText={setEmail}
         style={styles.input}
@@ -80,6 +83,7 @@ export default function SignupScreen() {
 
       <TextInput
         placeholder="Password"
+        placeholderTextColor="#8E8E93"
         value={password}
         onChangeText={setPassword}
         style={styles.input}
@@ -87,26 +91,22 @@ export default function SignupScreen() {
       />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
-{success ? <Text style={styles.success}>{success}</Text> : null}
-
-
+      {success ? <Text style={styles.success}>{success}</Text> : null}
 
       <TouchableOpacity
         style={styles.button}
         onPress={handleSignup}
         disabled={loading}
       >
-
-
         <Text style={styles.buttonText}>
           {loading ? "Creating..." : "Sign Up"}
         </Text>
       </TouchableOpacity>
-    <TouchableOpacity onPress={() => router.replace("/login")}>
+      <TouchableOpacity onPress={() => router.replace("/login")}>
         <Text style={styles.linkText}>
-            Already have an account? Login
+          Already have an account? Login
         </Text>
-    </TouchableOpacity>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -130,6 +130,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     borderRadius: 5,
+    color: "#000",
   },
   button: {
     backgroundColor: "#007bff",
