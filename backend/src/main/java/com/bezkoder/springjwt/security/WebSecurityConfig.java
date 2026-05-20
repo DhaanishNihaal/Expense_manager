@@ -119,7 +119,8 @@ public CorsConfigurationSource corsConfigurationSource() {
     config.setAllowedOriginPatterns(List.of(
         "http://localhost:*", // Allow all localhost ports
         "http://127.0.0.1:*", // Allow all 127.0.0.1 ports
-        "exp://*:*" // Allow all Expo Go URLs
+        "exp://*:*", // Allow all Expo Go URLs
+        "https://expense-manager-coral-zeta.vercel.app" // Allow Vercel deployment
     ));
 
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
