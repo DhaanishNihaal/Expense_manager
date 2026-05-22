@@ -1,6 +1,6 @@
 <div align="center">
 
-# 💸 SplitUp — Expense Manager
+# SplitUp — Expense Manager
 
 **A full-stack group expense management & real-time chat application**
 
@@ -12,13 +12,27 @@
 [![Java](https://img.shields.io/badge/Java-17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
-[Features](#-features) · [Tech Stack](#-tech-stack) · [Architecture](#-architecture) · [Getting Started](#-getting-started) · [API Reference](#-api-reference) · [Deployment](#-deployment)
+[![Deployed on Render](https://img.shields.io/badge/Backend-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://render.com/)
+[![Database on Neon](https://img.shields.io/badge/Database-Neon-00E599?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech/)
+[![Web on Vercel](https://img.shields.io/badge/Web_Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+[![Monitored by UptimeRobot](https://img.shields.io/badge/Uptime-UptimeRobot-3BD671?style=for-the-badge&logo=uptimerobot&logoColor=white)](https://uptimerobot.com/)
+
+[Features](#features) · [Tech Stack](#tech-stack) · [Architecture](#architecture) · [Getting Started](#getting-started) · [API Reference](#api-reference) · [Deployment](#deployment)
+
+---
+
+### Try It Now
+
+| **Install the APK** | **Web Demo** |
+|:-:|:-:|
+| [![Download APK](https://img.shields.io/badge/Download_APK-Expo_Build-000020?style=for-the-badge&logo=expo&logoColor=white)](https://expo.dev/accounts/dhaanishnihaal/projects/expense-manager-mobile/builds/5894077d-858b-4cef-80b1-c47aec7b493f) | https://expense-manager-coral-zeta.vercel.app |
+| Originally designed as a **native mobile app** | Sample web preview via Expo Web export |
 
 </div>
 
 ---
 
-## 📖 Overview
+## Overview
 
 **SplitUp** is a mobile-first expense splitting application — think *Splitwise meets WhatsApp*. Users can create groups, track shared expenses, automatically compute who owes whom via a greedy settlement algorithm, and communicate through real-time WebSocket-powered chat with typing indicators and online presence.
 
@@ -26,29 +40,29 @@
 
 ---
 
-## ✨ Features
+## Features
 
 | Category | Feature | Description |
 |----------|---------|-------------|
-| 🔐 **Auth** | JWT Authentication | Stateless token-based auth with access & refresh tokens |
-| 🔐 **Auth** | Role-Based Access | `USER`, `MODERATOR`, `ADMIN` roles with fine-grained permissions |
-| 🔐 **Auth** | BCrypt Encryption | Industry-standard password hashing |
-| 👥 **Groups** | Create & Manage Groups | Create groups, add/remove members, promote/demote admins |
-| 👥 **Groups** | Invite System | Send, accept, or reject group invitations |
-| 💰 **Expenses** | Expense Tracking | Log shared expenses within groups with payer and split details |
-| 💰 **Expenses** | Transaction Ledger | Full history of who paid what and to whom |
-| ⚖️ **Settlements** | Smart Settlement Engine | Greedy algorithm minimises the number of payments needed to settle up |
-| ⚖️ **Settlements** | Quick Pay | Record cash / bank payments directly from the settlements screen |
-| 💬 **Chat** | Real-Time Messaging | WebSocket (STOMP + SockJS) powered instant messaging |
-| 💬 **Chat** | Typing Indicators | Animated typing dots show when the other user is composing |
-| 💬 **Chat** | Online Presence | Live online/offline status badges on chat avatars |
-| 💬 **Chat** | Unread Counts | Per-conversation unread message badges |
-| 📱 **UX** | Pull-to-Refresh | Swipe down to refresh on every list screen |
-| 📱 **UX** | Tab Navigation | Bottom tab bar for Groups, Settlements, Messages, Invitations |
+| **Auth** | JWT Authentication | Stateless token-based auth with access & refresh tokens |
+| **Auth** | Role-Based Access | `USER`, `MODERATOR`, `ADMIN` roles with fine-grained permissions |
+| **Auth** | BCrypt Encryption | Industry-standard password hashing |
+| **Groups** | Create & Manage Groups | Create groups, add/remove members, promote/demote admins |
+| **Groups** | Invite System | Send, accept, or reject group invitations |
+| **Expenses** | Expense Tracking | Log shared expenses within groups with payer and split details |
+| **Expenses** | Transaction Ledger | Full history of who paid what and to whom |
+| **Settlements** | Smart Settlement Engine | Greedy algorithm minimises the number of payments needed to settle up |
+| **Settlements** | Quick Pay | Record cash / bank payments directly from the settlements screen |
+| **Chat** | Real-Time Messaging | WebSocket (STOMP + SockJS) powered instant messaging |
+| **Chat** | Typing Indicators | Animated typing dots show when the other user is composing |
+| **Chat** | Online Presence | Live online/offline status badges on chat avatars |
+| **Chat** | Unread Counts | Per-conversation unread message badges |
+| **UX** | Pull-to-Refresh | Swipe down to refresh on every list screen |
+| **UX** | Tab Navigation | Bottom tab bar for Groups, Settlements, Messages, Invitations |
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
 
@@ -82,7 +96,7 @@
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -135,7 +149,7 @@
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 Expense_manager/
@@ -186,12 +200,12 @@ Expense_manager/
 │
 ├── setup_database.sql                # Database initialisation script
 ├── insert_roles.sql                  # Role seed data
-└── README.md                         # ← You are here
+└── README.md
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -203,14 +217,14 @@ Expense_manager/
 | Node.js | 18+ | [Download](https://nodejs.org/) |
 | Expo CLI | Latest | `npm install -g expo-cli` |
 
-### 1️⃣ Clone the Repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/DhaanishNihaal/Expense_manager.git
 cd Expense_manager
 ```
 
-### 2️⃣ Backend Setup
+### 2. Backend Setup
 
 ```bash
 cd backend
@@ -254,7 +268,7 @@ INSERT INTO roles(name) VALUES('ROLE_MODERATOR');
 INSERT INTO roles(name) VALUES('ROLE_ADMIN');
 ```
 
-### 3️⃣ Frontend Setup
+### 3. Frontend Setup
 
 ```bash
 cd frontend
@@ -279,60 +293,60 @@ Scan the QR code with **Expo Go** (iOS/Android) or press `a` for Android emulato
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 ### Authentication
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/api/auth/signup` | Register a new user | ❌ |
-| `POST` | `/api/auth/signin` | Login and receive JWT | ❌ |
+| `POST` | `/api/auth/signup` | Register a new user | No |
+| `POST` | `/api/auth/signin` | Login and receive JWT | No |
 
 ### Groups
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/api/groups` | Create a new group | ✅ |
-| `GET` | `/api/groups` | List user's groups | ✅ |
-| `GET` | `/api/groups/{id}` | Get group details | ✅ |
-| `POST` | `/api/groups/{id}/members` | Add a member | ✅ |
-| `DELETE` | `/api/groups/{id}/leave` | Leave a group | ✅ |
-| `DELETE` | `/api/groups/{id}/remove/{memberId}` | Remove a member (admin) | ✅ |
-| `PUT` | `/api/groups/{id}/promote/{memberId}` | Promote to admin | ✅ |
-| `PUT` | `/api/groups/{id}/demote/{memberId}` | Demote to member | ✅ |
+| `POST` | `/api/groups` | Create a new group | Yes |
+| `GET` | `/api/groups` | List user's groups | Yes |
+| `GET` | `/api/groups/{id}` | Get group details | Yes |
+| `POST` | `/api/groups/{id}/members` | Add a member | Yes |
+| `DELETE` | `/api/groups/{id}/leave` | Leave a group | Yes |
+| `DELETE` | `/api/groups/{id}/remove/{memberId}` | Remove a member (admin) | Yes |
+| `PUT` | `/api/groups/{id}/promote/{memberId}` | Promote to admin | Yes |
+| `PUT` | `/api/groups/{id}/demote/{memberId}` | Demote to member | Yes |
 
 ### Expenses & Transactions
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/api/expenses` | Create an expense | ✅ |
-| `GET` | `/api/expenses/group/{groupId}` | List group expenses | ✅ |
-| `GET` | `/api/transactions/group/{groupId}` | List group transactions | ✅ |
+| `POST` | `/api/expenses` | Create an expense | Yes |
+| `GET` | `/api/expenses/group/{groupId}` | List group expenses | Yes |
+| `GET` | `/api/transactions/group/{groupId}` | List group transactions | Yes |
 
 ### Settlements & Balances
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/api/balances/group/{groupId}` | Get group balances | ✅ |
-| `GET` | `/api/settlements/me` | Get user's overall settlements | ✅ |
-| `POST` | `/api/settlements/pay` | Record a settlement payment | ✅ |
+| `GET` | `/api/balances/group/{groupId}` | Get group balances | Yes |
+| `GET` | `/api/settlements/me` | Get user's overall settlements | Yes |
+| `POST` | `/api/settlements/pay` | Record a settlement payment | Yes |
 
 ### Group Invitations
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `POST` | `/api/invites/send` | Send a group invite | ✅ |
-| `GET` | `/api/invites/pending` | List pending invites | ✅ |
-| `POST` | `/api/invites/{id}/accept` | Accept an invite | ✅ |
-| `POST` | `/api/invites/{id}/reject` | Reject an invite | ✅ |
+| `POST` | `/api/invites/send` | Send a group invite | Yes |
+| `GET` | `/api/invites/pending` | List pending invites | Yes |
+| `POST` | `/api/invites/{id}/accept` | Accept an invite | Yes |
+| `POST` | `/api/invites/{id}/reject` | Reject an invite | Yes |
 
 ### Chat
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/api/chat/my-chats` | List user's conversations | ✅ |
-| `GET` | `/api/chat/{chatId}/messages` | Get chat messages | ✅ |
-| `POST` | `/api/chat/send` | Send a message | ✅ |
+| `GET` | `/api/chat/my-chats` | List user's conversations | Yes |
+| `GET` | `/api/chat/{chatId}/messages` | Get chat messages | Yes |
+| `POST` | `/api/chat/send` | Send a message | Yes |
 
 ### WebSocket Endpoints
 
@@ -348,13 +362,55 @@ Scan the QR code with **Expo Go** (iOS/Android) or press `a` for Android emulato
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| `GET` | `/api/health` | API health status | ❌ |
+| `GET` | `/api/health` | API health status | No |
 
 ---
 
-## 🐳 Deployment
+## Deployment
 
-### Docker (Backend)
+SplitUp uses a fully cloud-hosted deployment pipeline. Every layer runs on a free/hobby tier — no credit card required.
+
+### Deployment Architecture
+
+```
+┌─────────────┐     ┌──────────────┐     ┌──────────────┐
+│  UptimeRobot │────▶│    Render     │────▶│     Neon     │
+│  (Monitor)   │     │  Spring Boot  │     │  PostgreSQL  │
+│  /api/health │     │  Docker+JDK17 │     │  Serverless  │
+└─────────────┘     └──────────────┘     └──────────────┘
+                           ▲
+              ┌────────────┴────────────┐
+              │                         │
+     ┌────────┴────────┐      ┌─────────┴────────┐
+     │   Expo / EAS    │      │     Vercel       │
+     │  Android APK    │      │  Web Preview     │
+     │  (Mobile App)   │      │  (dist/ export)  │
+     └─────────────────┘      └──────────────────┘
+```
+
+| Layer | Service | Purpose |
+|-------|---------|--------|
+| **Backend API** | [Render](https://render.com/) | Hosts the Spring Boot Docker container |
+| **Database** | [Neon](https://neon.tech/) | Serverless PostgreSQL with auto-scaling |
+| **Mobile App** | [Expo EAS](https://expo.dev/eas) | Builds & distributes the Android APK |
+| **Web Preview** | [Vercel](https://vercel.com/) | Hosts the Expo Web (`dist/`) static export |
+| **Monitoring** | [UptimeRobot](https://uptimerobot.com/) | Pings `/api/health` to keep the server alive |
+
+---
+
+### Render — Backend API
+
+The Spring Boot backend is containerised with Docker and deployed on **Render's** free web service tier.
+
+| | |
+|---|---|
+| **Live URL** | `https://expense-manager-mjt5.onrender.com` |
+| **Build** | Docker (`eclipse-temurin:17-jdk-alpine`) |
+| **Health Check** | `GET /api/health` |
+
+> **Note:** Render's free tier spins down after 15 minutes of inactivity. UptimeRobot prevents this (see below).
+
+**Docker build (local):**
 
 ```bash
 cd backend
@@ -367,41 +423,89 @@ docker run -p 8080:8080 \
   splitup-api
 ```
 
-### Render (Production)
+---
 
-The backend is deployed on **[Render](https://render.com/)** at:
+### Neon — Serverless PostgreSQL
 
-```
-https://expense-manager-mjt5.onrender.com
-```
+**[Neon](https://neon.tech/)** provides the production PostgreSQL database with a serverless, auto-scaling architecture.
 
-### EAS Build (Mobile)
+| | |
+|---|---|
+| **Why Neon?** | Serverless cold-start in ~500ms, auto-suspend on idle, generous free tier (0.5 GB storage) |
+| **Connection** | Standard `jdbc:postgresql://` connection string via Render environment variables |
+| **Branching** | Neon supports database branching — useful for staging/preview environments |
+
+The backend connects to Neon using the `SPRING_DATASOURCE_URL` environment variable set on Render. No special driver needed — it's standard PostgreSQL.
+
+---
+
+### Expo EAS — Mobile APK
+
+The primary distribution channel. SplitUp is **originally designed as a native mobile application**.
+
+| | |
+|---|---|
+| **Latest APK** | [Download from Expo](https://expo.dev/accounts/dhaanishnihaal/projects/expense-manager-mobile/builds/5894077d-858b-4cef-80b1-c47aec7b493f) |
+| **Build System** | Expo Application Services (EAS Build) |
+| **OTA Updates** | Enabled via `expo-updates` — push JS updates without rebuilding |
+
+**Build profiles** (configured in `eas.json`):
 
 ```bash
 cd frontend
 
-# Development build (internal testing)
+# Development build (internal testing with dev client)
 eas build --profile development --platform android
 
-# Preview APK
+# Preview APK (shareable APK for testers)
 eas build --profile preview --platform android
 
-# Production build
+# Production build (Play Store ready, auto-increment version)
 eas build --profile production --platform android
 ```
 
 ---
 
-## 🔒 Security
+### Vercel — Web Preview
 
-- ✅ **JWT stateless authentication** — no server-side sessions
-- ✅ **BCrypt password hashing** — adaptive cost factor
-- ✅ **Role-based access control** — endpoint-level authorisation
-- ✅ **CORS configuration** — restricts origins in production
-- ✅ **SQL injection protection** — parameterised queries via JPA
-- ✅ **WebSocket auth** — STOMP headers carry user identity
+A **sample web demo** is deployed on **[Vercel](https://vercel.com/)** using the Expo Web static export (`dist/` directory).
 
-### ⚠️ Production Checklist
+| | |
+|---|---|
+| **Purpose** | Quick browser-based preview for recruiters/reviewers |
+| **Build** | `npx expo export --platform web` → deploy `dist/` to Vercel |
+| **Note** | This is a **web preview only** — the app is designed and optimised for mobile |
+
+> **Note:** Some native-only features (haptics, native gestures) are gracefully degraded in the web version.
+
+---
+
+### UptimeRobot — Health Monitoring & Keep-Alive
+
+**[UptimeRobot](https://uptimerobot.com/)** pings the backend's health endpoint at regular intervals to:
+
+1. **Prevent cold starts** — Render's free tier sleeps after 15 min of inactivity. UptimeRobot sends periodic `GET /api/health` requests to keep the server warm.
+2. **Monitor uptime** — Get notified via email/webhook if the backend goes down.
+3. **Track response times** — Historical latency data for performance monitoring.
+
+| | |
+|---|---|
+| **Monitored Endpoint** | `https://expense-manager-mjt5.onrender.com/api/health` |
+| **Ping Interval** | Every 5 minutes |
+| **Alert Channels** | Email notifications on downtime |
+
+---
+
+## Security
+
+- **JWT stateless authentication** — no server-side sessions
+- **BCrypt password hashing** — adaptive cost factor
+- **Role-based access control** — endpoint-level authorisation
+- **CORS configuration** — restricts origins in production
+- **SQL injection protection** — parameterised queries via JPA
+- **WebSocket auth** — STOMP headers carry user identity
+
+### Production Checklist
 
 - [ ] Rotate the JWT secret to a strong, random 256-bit key
 - [ ] Store secrets in environment variables, not config files
@@ -412,7 +516,7 @@ eas build --profile production --platform android
 
 ---
 
-## 📊 Database Schema
+## Database Schema
 
 ```mermaid
 erDiagram
@@ -463,7 +567,7 @@ erDiagram
 
 ---
 
-## 👤 Author
+## Author
 
 **Dhaanish Nihaal**
 
@@ -471,7 +575,7 @@ erDiagram
 
 ---
 
-## 📄 License
+## License
 
 This project is for personal / educational use.
 
@@ -479,6 +583,6 @@ This project is for personal / educational use.
 
 <div align="center">
 
-**⭐ Star this repository if you found it useful!**
+**Star this repository if you found it useful!**
 
 </div>
