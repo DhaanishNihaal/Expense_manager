@@ -16,8 +16,11 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchMySettlements, paySettlement, Settlement } from "../../src/api/settlementApi";
 import { useFocusEffect } from "expo-router";
+import { useWebSocket } from "../../src/contexts/WebSocketContext";
+import chatApi from "../../src/api/chatApi";
 
 export default function SettlementsScreen() {
+    const { stompClient, isConnected } = useWebSocket();
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [settlements, setSettlements] = useState<Settlement[]>([]);
     const [loading, setLoading] = useState(true);
@@ -111,6 +114,33 @@ export default function SettlementsScreen() {
         try {
             setPaying(true);
             await paySettlement(selectedSettlement.toUserId, amountNum);
+
+            // Automatically send direct direct message to personal user (private chat)
+            try {
+                const chatRes = await chatApi.createPrivateChat(selectedSettlement.toUserId);
+                const chatId = chatRes.data;
+
+                if (stompClient && isConnected) {
+                    const messageData = {
+                        chatId: chatId,
+                        senderId: currentUser.id,
+                        content: `paid you ₹${amountNum.toFixed(2)}`,
+                        type: "SETTLEMENT",
+                        settlementAmount: amountNum
+                    };
+
+                    console.log("WebSocket publishing payment message to private chat:", messageData);
+                    stompClient.publish({
+                        destination: "/app/chat.send",
+                        body: JSON.stringify(messageData)
+                    });
+                } else {
+                    console.log("Stomp client not connected, skipping direct message dispatch");
+                }
+            } catch (chatErr) {
+                console.error("Failed to send direct payment message via WebSocket:", chatErr);
+            }
+
             Alert.alert("Success", `Payment of ₹${amountNum.toFixed(2)} registered successfully!`);
             setIsPayModalVisible(false);
             setSelectedSettlement(null);
