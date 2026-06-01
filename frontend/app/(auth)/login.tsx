@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     padding: 24,
+    backgroundColor: "#fff",
   },
   title: {
     fontSize: 28,
@@ -93,6 +94,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
+    color: "#000",
   },
   button: {
     backgroundColor: "#2563eb",
