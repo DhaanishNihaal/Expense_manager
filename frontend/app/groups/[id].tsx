@@ -513,6 +513,7 @@ const styles = StyleSheet.create({
     position: "absolute", right: 0, top: 30, backgroundColor: "#fff",
     borderRadius: 8, borderWidth: 1, borderColor: "#E5E5EA",
     shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 4, zIndex: 100,
+    minWidth: 100, alignItems: "center",
   },
   createButton: {
     backgroundColor: "#007AFF", paddingVertical: 15, borderRadius: 12,

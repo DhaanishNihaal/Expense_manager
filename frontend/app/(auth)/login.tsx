@@ -2,6 +2,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-nativ
 import { useState } from "react";
 import { login } from "../../src/auth/authService";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useWebSocket } from "../../src/contexts/WebSocketContext";
 
@@ -13,6 +14,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     try {
@@ -46,14 +48,26 @@ export default function LoginScreen() {
         autoCapitalize="none"
       />
 
-      <TextInput
-        placeholder="Password"
-        placeholderTextColor="#8E8E93"
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
-        secureTextEntry
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          placeholder="Password"
+          placeholderTextColor="#8E8E93"
+          value={password}
+          onChangeText={setPassword}
+          style={styles.passwordInput}
+          secureTextEntry={!showPassword}
+        />
+        <TouchableOpacity
+          onPress={() => setShowPassword(!showPassword)}
+          style={styles.eyeButton}
+        >
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={20}
+            color="#8E8E93"
+          />
+        </TouchableOpacity>
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -95,6 +109,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 16,
     color: "#000",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 12,
+    color: "#000",
+  },
+  eyeButton: {
+    padding: 4,
   },
   button: {
     backgroundColor: "#2563eb",

@@ -819,6 +819,7 @@ export default function ChatScreen() {
                                 <Picker
                                     selectedValue={selectedMemberId}
                                     onValueChange={(itemValue) => setSelectedMemberId(itemValue)}
+                                    style={styles.picker}
                                 >
                                     {groupMembers.map(member => (
                                         <Picker.Item key={member.id} label={member.name} value={member.id} />
@@ -1179,6 +1180,9 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         backgroundColor: "#F2F2F7",
         borderRadius: 10,
+    },
+    picker: {
+        color: "#000000",
     },
     inputLabel: {
         fontSize: 16,

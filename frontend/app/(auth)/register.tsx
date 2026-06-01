@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import api from "../../src/api/api";
 import { useRouter } from "expo-router";
 import { AxiosError } from "axios";
+import { Ionicons } from "@expo/vector-icons";
 
 
 export default function SignupScreen() {
@@ -16,6 +17,7 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
 
   const handleSignup = async () => {
@@ -81,14 +83,26 @@ export default function SignupScreen() {
         autoCapitalize="none"
       />
 
-      <TextInput
-        placeholder="Password"
-        placeholderTextColor="#8E8E93"
-        value={password}
-        onChangeText={setPassword}
-        style={styles.input}
-        secureTextEntry
-      />
+      <View style={styles.passwordContainer}>
+        <TextInput
+          placeholder="Password"
+          placeholderTextColor="#8E8E93"
+          value={password}
+          onChangeText={setPassword}
+          style={styles.passwordInput}
+          secureTextEntry={!showPassword}
+        />
+        <TouchableOpacity
+          onPress={() => setShowPassword(!showPassword)}
+          style={styles.eyeButton}
+        >
+          <Ionicons
+            name={showPassword ? "eye-off" : "eye"}
+            size={20}
+            color="#8E8E93"
+          />
+        </TouchableOpacity>
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {success ? <Text style={styles.success}>{success}</Text> : null}
@@ -132,6 +146,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 5,
     color: "#000",
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    marginBottom: 10,
+    paddingHorizontal: 10,
+    width: "100%",
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 10,
+    color: "#000",
+  },
+  eyeButton: {
+    padding: 4,
   },
   button: {
     backgroundColor: "#007bff",

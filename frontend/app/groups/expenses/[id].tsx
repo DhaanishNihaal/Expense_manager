@@ -354,6 +354,8 @@ export default function ExpenseTransactionsScreen() {
                         shadowRadius: 4,
                         elevation: 3,
                         zIndex: 100,
+                        minWidth: 100,
+                        alignItems: "center",
                       }}
                     >
                       <TouchableOpacity
@@ -625,6 +627,7 @@ const styles = StyleSheet.create({
   picker: {
     height: 50,
     width: "100%",
+    color: "#000",
   },
   selectAllButton: {
     backgroundColor: "#34C759",
