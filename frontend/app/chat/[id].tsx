@@ -672,6 +672,11 @@ export default function ChatScreen() {
         if (item.type === "SETTLEMENT") {
             return (
                 <View key={item.id} style={[styles.messageContainer, isMe ? styles.myMessage : styles.otherMessage, styles.settlementMessage]}>
+                    {isGroupChat && !isMe && item.sender?.name && (
+                        <Text style={styles.senderName}>
+                            {item.sender.name}
+                        </Text>
+                    )}
                     <View style={styles.settlementHeader}>
                         <Ionicons name="checkmark-circle" size={16} color={isMe ? "#FFFFFF" : "#34C759"} />
                         <Text style={[styles.settlementHeaderText, isMe ? styles.myMessageText : styles.otherMessageText]}>
@@ -696,6 +701,11 @@ export default function ChatScreen() {
         const isMine = item.sender?.id === currentUserId;
         return (
             <View key={item.id} style={[styles.messageContainer, isMine ? styles.myMessage : styles.otherMessage]}>
+                {isGroupChat && !isMine && item.sender?.name && (
+                    <Text style={styles.senderName}>
+                        {item.sender.name}
+                    </Text>
+                )}
                 <Text style={[styles.messageText, isMine ? styles.myMessageText : styles.otherMessageText]}>
                     {item.content}
                 </Text>
@@ -1032,6 +1042,12 @@ const styles = StyleSheet.create({
     },
     otherMessageText: {
         color: "#000000",
+    },
+    senderName: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#8E8E93",
+        marginBottom: 2,
     },
     messageTime: {
         fontSize: 10,
