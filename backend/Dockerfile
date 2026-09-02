@@ -1,20 +1,27 @@
-# Use lightweight Java 17 image
-FROM eclipse-temurin:17-jdk-alpine
+# Build stage - Maven image for compilation
+FROM maven:3.9-eclipse-temurin-17-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy everything
-COPY . .
+# Copy pom.xml first for better layer caching
+COPY pom.xml .
 
-# Give permission to mvnw
-RUN chmod +x mvnw
+# Copy source code
+COPY src ./src
 
 # Build the project (skip tests for faster deploy)
-RUN ./mvnw clean package -DskipTests
+RUN mvn clean package -DskipTests
+
+# Runtime stage - lightweight Java runtime
+FROM eclipse-temurin:17-jdk-alpine
+
+WORKDIR /app
+
+# Copy built JAR from builder stage
+COPY --from=builder /app/target/spring-boot-security-jwt-0.0.1-SNAPSHOT.jar app.jar
 
 # Expose Spring Boot port
 EXPOSE 8080
 
 # Run the jar
-CMD ["java", "-jar", "target/spring-boot-security-jwt-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "app.jar"]
